@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
 
@@ -54,17 +56,14 @@ namespace PayrollSystem.ViewModels
 
         public MainViewModel()
         {
-            // Initialize ViewModels
             _dashboardViewModel = new DashboardViewModel();
             _employeeViewModel = new EmployeeViewModel();
             _payrollViewModel = new PayrollViewModel();
             _payslipViewModel = new PayslipViewModel();
             _reportsViewModel = new ReportsViewModel();
 
-            // Set default view
             CurrentView = _dashboardViewModel;
 
-            // Initialize commands
             NavigateDashboardCommand = new RelayCommand(_ => NavigateTo("Dashboard"));
             NavigateEmployeesCommand = new RelayCommand(_ => NavigateTo("Employees"));
             NavigatePayrollCommand = new RelayCommand(_ => NavigateTo("Payroll"));
@@ -83,6 +82,8 @@ namespace PayrollSystem.ViewModels
         private void NavigateTo(string page)
         {
             ActiveNav = page;
+
+            // Switch view immediately for instant feel
             CurrentView = page switch
             {
                 "Dashboard" => _dashboardViewModel,
@@ -93,19 +94,30 @@ namespace PayrollSystem.ViewModels
                 _ => _dashboardViewModel
             };
 
-            // Refresh data when navigating
-            switch (page)
+            // Load data on background thread to avoid UI freeze
+            Task.Run(() =>
             {
-                case "Dashboard": _dashboardViewModel.LoadData(); break;
-                case "Employees": _employeeViewModel.LoadEmployees(); break;
-                case "Payroll": _payrollViewModel.LoadData(); break;
-                case "Reports": _reportsViewModel.LoadData(); break;
-            }
+                switch (page)
+                {
+                    case "Dashboard": _dashboardViewModel.LoadData(); break;
+                    case "Employees":
+                        Application.Current.Dispatcher.Invoke(() => _employeeViewModel.LoadEmployees());
+                        break;
+                    case "Payroll":
+                        Application.Current.Dispatcher.Invoke(() => _payrollViewModel.LoadData());
+                        break;
+                    case "Payslip":
+                        Application.Current.Dispatcher.Invoke(() => _payslipViewModel.LoadEmployees());
+                        break;
+                    case "Reports":
+                        Application.Current.Dispatcher.Invoke(() => _reportsViewModel.LoadData());
+                        break;
+                }
+            });
         }
 
         private void Logout()
         {
-            // Signal logout — handled in MainWindow code-behind
             CurrentUserName = "";
             CurrentUserRole = "";
             ActiveNav = "Logout";

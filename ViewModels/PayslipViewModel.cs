@@ -11,6 +11,7 @@ namespace PayrollSystem.ViewModels
     public class PayslipViewModel : BaseViewModel
     {
         private EmployeeItem? _selectedEmployee;
+        private string _employeeSearch = "";
         private string _companyName = "Transfund Business";
         private string _companyAddress = "Quezon City, Metro Manila";
         private string _periodText = "";
@@ -37,17 +38,18 @@ namespace PayrollSystem.ViewModels
         private string _bonus = "0.00";
         private string _grossSalary = "0.00";
 
-        // Deductions
+        // Editable Deductions
         private string _sss = "0.00";
         private string _pagibig = "0.00";
         private string _philhealth = "0.00";
-        private string _incomeTax = "0.00";
         private string _loan = "0.00";
         private string _others = "0.00";
         private string _totalDeductions = "0.00";
-
-        // Net Pay
         private string _netPay = "0.00";
+
+        // Signature lines
+        private string _preparedBy = "";
+        private string _approvedBy = "";
 
         // Period dates
         private DateTime _periodStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
@@ -61,6 +63,8 @@ namespace PayrollSystem.ViewModels
         private string _bonusInput = "0";
         private string _loanInput = "0";
         private string _othersInput = "0";
+
+        private decimal _cachedGross = 0;
 
         #region Properties
         public string CompanyName { get => _companyName; set => SetProperty(ref _companyName, value); }
@@ -87,16 +91,20 @@ namespace PayrollSystem.ViewModels
         public string BonusAmount { get => _bonus; set => SetProperty(ref _bonus, value); }
         public string GrossSalary { get => _grossSalary; set => SetProperty(ref _grossSalary, value); }
 
-        public string Sss { get => _sss; set => SetProperty(ref _sss, value); }
-        public string Pagibig { get => _pagibig; set => SetProperty(ref _pagibig, value); }
-        public string Philhealth { get => _philhealth; set => SetProperty(ref _philhealth, value); }
-        public string IncomeTax { get => _incomeTax; set => SetProperty(ref _incomeTax, value); }
-        public string Loan { get => _loan; set => SetProperty(ref _loan, value); }
-        public string Others { get => _others; set => SetProperty(ref _others, value); }
+        // Editable deduction fields
+        public string Sss { get => _sss; set { SetProperty(ref _sss, value); RecomputeDeductions(); } }
+        public string Pagibig { get => _pagibig; set { SetProperty(ref _pagibig, value); RecomputeDeductions(); } }
+        public string Philhealth { get => _philhealth; set { SetProperty(ref _philhealth, value); RecomputeDeductions(); } }
+        public string Loan { get => _loan; set { SetProperty(ref _loan, value); RecomputeDeductions(); } }
+        public string Others { get => _others; set { SetProperty(ref _others, value); RecomputeDeductions(); } }
         public string TotalDeductions { get => _totalDeductions; set => SetProperty(ref _totalDeductions, value); }
         public string NetPay { get => _netPay; set => SetProperty(ref _netPay, value); }
 
+        public string PreparedBy { get => _preparedBy; set => SetProperty(ref _preparedBy, value); }
+        public string ApprovedBy { get => _approvedBy; set => SetProperty(ref _approvedBy, value); }
+
         public EmployeeItem? SelectedEmployee { get => _selectedEmployee; set { SetProperty(ref _selectedEmployee, value); OnEmployeeSelected(); } }
+        public string EmployeeSearch { get => _employeeSearch; set { SetProperty(ref _employeeSearch, value); FilterEmployees(); } }
         public DateTime PeriodStart { get => _periodStart; set { SetProperty(ref _periodStart, value); UpdatePeriodText(); } }
         public DateTime PeriodEnd { get => _periodEnd; set { SetProperty(ref _periodEnd, value); UpdatePeriodText(); } }
         public string WorkDays { get => _workDays; set { SetProperty(ref _workDays, value); ComputePayslip(); } }
@@ -109,6 +117,7 @@ namespace PayrollSystem.ViewModels
         #endregion
 
         public ObservableCollection<EmployeeItem> Employees { get; } = new();
+        public ObservableCollection<EmployeeItem> FilteredEmployees { get; } = new();
 
         public ICommand GeneratePayslipCommand { get; }
         public ICommand PrintCommand { get; }
@@ -118,7 +127,6 @@ namespace PayrollSystem.ViewModels
             GeneratePayslipCommand = new RelayCommand(_ => ComputePayslip());
             PrintCommand = new RelayCommand(_ => PrintPayslip());
             UpdatePeriodText();
-            LoadEmployees();
         }
 
         public void LoadEmployees()
@@ -145,6 +153,7 @@ namespace PayrollSystem.ViewModels
                             DailyRate = reader.GetDecimal("daily_rate"),
                         });
                     }
+                    FilterEmployees();
                     return;
                 }
             }
@@ -163,6 +172,19 @@ namespace PayrollSystem.ViewModels
             };
             foreach (var (id, num, fn, ln, pos, rate) in demo)
                 Employees.Add(new EmployeeItem { Id = id, EmpNumber = num, FirstName = fn, LastName = ln, FullName = $"{fn} {ln}", Position = pos, DailyRate = rate });
+            FilterEmployees();
+        }
+
+        private void FilterEmployees()
+        {
+            FilteredEmployees.Clear();
+            var filtered = string.IsNullOrWhiteSpace(EmployeeSearch)
+                ? Employees
+                : new ObservableCollection<EmployeeItem>(Employees.Where(e =>
+                    e.FullName.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase) ||
+                    e.EmpNumber.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase) ||
+                    e.Position.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase)));
+            foreach (var emp in filtered) FilteredEmployees.Add(emp);
         }
 
         private void OnEmployeeSelected()
@@ -189,12 +211,10 @@ namespace PayrollSystem.ViewModels
             decimal.TryParse(HolidayHours, out var holHours);
             decimal.TryParse(AllowanceInput, out var allowInput);
             decimal.TryParse(BonusInput, out var bonInput);
-            decimal.TryParse(LoanInput, out var loanVal);
-            decimal.TryParse(OthersInput, out var othersVal);
 
             var rate = SelectedEmployee.DailyRate;
 
-            // Fill daily salary grid (simulate weekly pattern)
+            // Fill daily salary grid
             var daysInWeek = Math.Min(days, 7);
             MonSalary = daysInWeek >= 1 ? $"{rate:N2}" : "0.00";
             TueSalary = daysInWeek >= 2 ? $"{rate:N2}" : "0.00";
@@ -207,47 +227,55 @@ namespace PayrollSystem.ViewModels
             var basic = rate * days;
             var otPay = otHours * (rate / 8) * 1.25m;
             var holPay = holHours * (rate / 8) * 2m;
-            var gross = basic + otPay + holPay + allowInput + bonInput;
-
-            // Government deductions
-            var sss = Math.Min(gross * 0.045m, 1125m);
-            var pagibig = Math.Min(gross * 0.02m, 100m);
-            var philhealth = Math.Min(gross * 0.0275m, 1650m);
-            var tax = CalculateTax(gross);
-            var totalDed = sss + pagibig + philhealth + tax + loanVal + othersVal;
-            var net = gross - totalDed;
+            _cachedGross = basic + otPay + holPay + allowInput + bonInput;
 
             BasicSalary = $"{basic:N2}";
             OtPay = $"{otPay:N2}";
             AllowanceTotal = $"{allowInput:N2}";
             HolidayPay = $"{holPay:N2}";
             BonusAmount = $"{bonInput:N2}";
-            GrossSalary = $"{gross:N2}";
+            GrossSalary = $"{_cachedGross:N2}";
 
-            Sss = $"{sss:N2}";
-            Pagibig = $"{pagibig:N2}";
-            Philhealth = $"{philhealth:N2}";
-            IncomeTax = $"{tax:N2}";
-            Loan = $"{loanVal:N2}";
-            Others = $"{othersVal:N2}";
-            TotalDeductions = $"{totalDed:N2}";
-            NetPay = $"{net:N2}";
+            // Auto-compute default deductions
+            var sss = Math.Min(_cachedGross * 0.045m, 1125m);
+            var pagibig = Math.Min(_cachedGross * 0.02m, 100m);
+            var philhealth = Math.Min(_cachedGross * 0.0275m, 1650m);
+
+            decimal.TryParse(LoanInput, out var loanVal);
+            decimal.TryParse(OthersInput, out var othersVal);
+
+            _sss = $"{sss:N2}";
+            _pagibig = $"{pagibig:N2}";
+            _philhealth = $"{philhealth:N2}";
+            _loan = $"{loanVal:N2}";
+            _others = $"{othersVal:N2}";
+            OnPropertyChanged(nameof(Sss));
+            OnPropertyChanged(nameof(Pagibig));
+            OnPropertyChanged(nameof(Philhealth));
+            OnPropertyChanged(nameof(Loan));
+            OnPropertyChanged(nameof(Others));
+
+            RecomputeDeductions();
             AllowPerDay = "500.00";
         }
 
-        private decimal CalculateTax(decimal gross)
+        private void RecomputeDeductions()
         {
-            if (gross <= 20833m) return 0m;
-            if (gross <= 33333m) return (gross - 20833m) * 0.15m;
-            if (gross <= 66667m) return 2500m + (gross - 33333m) * 0.20m;
-            if (gross <= 166667m) return 9167m + (gross - 66667m) * 0.25m;
-            if (gross <= 666667m) return 34167m + (gross - 166667m) * 0.30m;
-            return 184167m + (gross - 666667m) * 0.32m;
+            decimal.TryParse(_sss, out var sss);
+            decimal.TryParse(_pagibig, out var pagibig);
+            decimal.TryParse(_philhealth, out var phil);
+            decimal.TryParse(_loan, out var loan);
+            decimal.TryParse(_others, out var others);
+
+            var totalDed = sss + pagibig + phil + loan + others;
+            var net = _cachedGross - totalDed;
+
+            TotalDeductions = $"{totalDed:N2}";
+            NetPay = $"{net:N2}";
         }
 
         private void PrintPayslip()
         {
-            // Print functionality — would open print dialog in real implementation
             System.Windows.MessageBox.Show(
                 $"Payslip for {EmployeeName}\nNet Pay: ₱{NetPay}\n\nPrint functionality ready for production.",
                 "Print Payslip", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);

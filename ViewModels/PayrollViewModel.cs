@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
@@ -10,6 +11,7 @@ namespace PayrollSystem.ViewModels
     public class PayrollViewModel : BaseViewModel
     {
         private EmployeeItem? _selectedEmployee;
+        private string _employeeSearch = "";
         private string _workDays = "22";
         private string _overtimeHours = "0";
         private string _holidayHours = "0";
@@ -19,10 +21,9 @@ namespace PayrollSystem.ViewModels
         private string _overtimePay = "₱0.00";
         private string _holidayPay = "₱0.00";
         private string _grossSalary = "₱0.00";
-        private string _sssDeduction = "₱0.00";
-        private string _pagibigDeduction = "₱0.00";
-        private string _philhealthDeduction = "₱0.00";
-        private string _taxDeduction = "₱0.00";
+        private string _sssDeduction = "0";
+        private string _pagibigDeduction = "0";
+        private string _philhealthDeduction = "0";
         private string _totalDeductions = "₱0.00";
         private string _netPay = "₱0.00";
         private DateTime _periodStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
@@ -30,6 +31,7 @@ namespace PayrollSystem.ViewModels
         private string _statusMessage = "";
 
         public EmployeeItem? SelectedEmployee { get => _selectedEmployee; set { SetProperty(ref _selectedEmployee, value); ComputeSalary(); } }
+        public string EmployeeSearch { get => _employeeSearch; set { SetProperty(ref _employeeSearch, value); FilterEmployees(); } }
         public string WorkDays { get => _workDays; set { SetProperty(ref _workDays, value); ComputeSalary(); } }
         public string OvertimeHours { get => _overtimeHours; set { SetProperty(ref _overtimeHours, value); ComputeSalary(); } }
         public string HolidayHours { get => _holidayHours; set { SetProperty(ref _holidayHours, value); ComputeSalary(); } }
@@ -39,10 +41,10 @@ namespace PayrollSystem.ViewModels
         public string OvertimePay { get => _overtimePay; set => SetProperty(ref _overtimePay, value); }
         public string HolidayPay { get => _holidayPay; set => SetProperty(ref _holidayPay, value); }
         public string GrossSalary { get => _grossSalary; set => SetProperty(ref _grossSalary, value); }
-        public string SssDeduction { get => _sssDeduction; set => SetProperty(ref _sssDeduction, value); }
-        public string PagibigDeduction { get => _pagibigDeduction; set => SetProperty(ref _pagibigDeduction, value); }
-        public string PhilhealthDeduction { get => _philhealthDeduction; set => SetProperty(ref _philhealthDeduction, value); }
-        public string TaxDeduction { get => _taxDeduction; set => SetProperty(ref _taxDeduction, value); }
+        // Editable deductions
+        public string SssDeduction { get => _sssDeduction; set { SetProperty(ref _sssDeduction, value); ComputeDeductions(); } }
+        public string PagibigDeduction { get => _pagibigDeduction; set { SetProperty(ref _pagibigDeduction, value); ComputeDeductions(); } }
+        public string PhilhealthDeduction { get => _philhealthDeduction; set { SetProperty(ref _philhealthDeduction, value); ComputeDeductions(); } }
         public string TotalDeductions { get => _totalDeductions; set => SetProperty(ref _totalDeductions, value); }
         public string NetPay { get => _netPay; set => SetProperty(ref _netPay, value); }
         public DateTime PeriodStart { get => _periodStart; set => SetProperty(ref _periodStart, value); }
@@ -50,8 +52,11 @@ namespace PayrollSystem.ViewModels
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
 
         public ObservableCollection<EmployeeItem> Employees { get; } = new();
+        public ObservableCollection<EmployeeItem> FilteredEmployees { get; } = new();
 
         public ICommand ProcessPayrollCommand { get; }
+
+        private decimal _cachedGross = 0;
 
         public PayrollViewModel()
         {
@@ -87,6 +92,8 @@ namespace PayrollSystem.ViewModels
                 else LoadDemoEmployees();
             }
             catch { LoadDemoEmployees(); }
+
+            FilterEmployees();
         }
 
         private void LoadDemoEmployees()
@@ -97,9 +104,29 @@ namespace PayrollSystem.ViewModels
                 (3, "EMP-0003", "Trecia", "De Jesus", "Office Administrator", 1100m),
                 (4, "EMP-0004", "Alyssa Marie", "Zamudio", "Restaurant Manager", 1000m),
                 (5, "EMP-0005", "Alliyah", "Lobendino", "Head Chef", 950m),
+                (6, "EMP-0006", "Cristel Khaye", "Sevilla", "Service Staff", 650m),
+                (7, "EMP-0007", "Michael", "Villasenor", "Kitchen Staff", 600m),
+                (8, "EMP-0008", "Beverly", "Gabriel", "Cashier", 550m),
+                (9, "EMP-0009", "Charmine", "Resus", "Cashier", 550m),
+                (10, "EMP-0010", "Kiven", "Paez", "Service Staff", 600m),
+                (11, "EMP-0011", "Lucky", "Flores", "Billiard Manager", 800m),
+                (12, "EMP-0012", "Romez", "Bautista", "Game Attendant", 500m),
+                (13, "EMP-0013", "Jerryco", "Viador", "Game Attendant", 500m),
             };
             foreach (var (id, num, fn, ln, pos, rate) in demo)
                 Employees.Add(new EmployeeItem { Id = id, EmpNumber = num, FirstName = fn, LastName = ln, FullName = $"{fn} {ln}", Position = pos, DailyRate = rate, DailyRateFormatted = $"₱{rate:N2}" });
+        }
+
+        private void FilterEmployees()
+        {
+            FilteredEmployees.Clear();
+            var filtered = string.IsNullOrWhiteSpace(EmployeeSearch)
+                ? Employees
+                : new ObservableCollection<EmployeeItem>(Employees.Where(e =>
+                    e.FullName.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase) ||
+                    e.EmpNumber.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase) ||
+                    e.Position.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase)));
+            foreach (var emp in filtered) FilteredEmployees.Add(emp);
         }
 
         private void ComputeSalary()
@@ -116,36 +143,40 @@ namespace PayrollSystem.ViewModels
             var basic = rate * days;
             var otPay = ot * (rate / 8) * 1.25m;
             var holPay = hol * (rate / 8) * 2m;
-            var gross = basic + otPay + holPay + allow + bon;
-
-            // Deductions
-            var sss = Math.Min(gross * 0.045m, 1125m);
-            var pagibig = Math.Min(gross * 0.02m, 100m);
-            var philhealth = Math.Min(gross * 0.0275m, 1650m);
-            var tax = CalculateTax(gross);
-            var totalDed = sss + pagibig + philhealth + tax;
-            var net = gross - totalDed;
+            _cachedGross = basic + otPay + holPay + allow + bon;
 
             BasicSalary = $"₱{basic:N2}";
             OvertimePay = $"₱{otPay:N2}";
             HolidayPay = $"₱{holPay:N2}";
-            GrossSalary = $"₱{gross:N2}";
-            SssDeduction = $"₱{sss:N2}";
-            PagibigDeduction = $"₱{pagibig:N2}";
-            PhilhealthDeduction = $"₱{philhealth:N2}";
-            TaxDeduction = $"₱{tax:N2}";
-            TotalDeductions = $"₱{totalDed:N2}";
-            NetPay = $"₱{net:N2}";
+            GrossSalary = $"₱{_cachedGross:N2}";
+
+            // Auto-compute default deductions based on gross
+            var sss = Math.Min(_cachedGross * 0.045m, 1125m);
+            var pagibig = Math.Min(_cachedGross * 0.02m, 100m);
+            var philhealth = Math.Min(_cachedGross * 0.0275m, 1650m);
+
+            // Update editable deduction fields (user can override)
+            _sssDeduction = $"{sss:N2}";
+            _pagibigDeduction = $"{pagibig:N2}";
+            _philhealthDeduction = $"{philhealth:N2}";
+            OnPropertyChanged(nameof(SssDeduction));
+            OnPropertyChanged(nameof(PagibigDeduction));
+            OnPropertyChanged(nameof(PhilhealthDeduction));
+
+            ComputeDeductions();
         }
 
-        private decimal CalculateTax(decimal gross)
+        private void ComputeDeductions()
         {
-            if (gross <= 20833m) return 0m;
-            if (gross <= 33333m) return (gross - 20833m) * 0.15m;
-            if (gross <= 66667m) return 2500m + (gross - 33333m) * 0.20m;
-            if (gross <= 166667m) return 9167m + (gross - 66667m) * 0.25m;
-            if (gross <= 666667m) return 34167m + (gross - 166667m) * 0.30m;
-            return 184167m + (gross - 666667m) * 0.32m;
+            decimal.TryParse(SssDeduction, out var sss);
+            decimal.TryParse(PagibigDeduction, out var pagibig);
+            decimal.TryParse(PhilhealthDeduction, out var phil);
+
+            var totalDed = sss + pagibig + phil;
+            var net = _cachedGross - totalDed;
+
+            TotalDeductions = $"₱{totalDed:N2}";
+            NetPay = $"₱{net:N2}";
         }
 
         private void ProcessPayroll()
@@ -159,17 +190,16 @@ namespace PayrollSystem.ViewModels
                 decimal.TryParse(HolidayHours, out var hol);
                 decimal.TryParse(Allowance, out var allow);
                 decimal.TryParse(Bonus, out var bon);
+                decimal.TryParse(SssDeduction, out var sss);
+                decimal.TryParse(PagibigDeduction, out var pagibig);
+                decimal.TryParse(PhilhealthDeduction, out var phil);
 
                 var rate = SelectedEmployee.DailyRate;
                 var basic = rate * days;
                 var otPay = ot * (rate / 8) * 1.25m;
                 var holPay = hol * (rate / 8) * 2m;
                 var gross = basic + otPay + holPay + allow + bon;
-                var sss = Math.Min(gross * 0.045m, 1125m);
-                var pagibig = Math.Min(gross * 0.02m, 100m);
-                var philhealth = Math.Min(gross * 0.0275m, 1650m);
-                var tax = CalculateTax(gross);
-                var totalDed = sss + pagibig + philhealth + tax;
+                var totalDed = sss + pagibig + phil;
                 var net = gross - totalDed;
 
                 if (DatabaseHelper.TestConnection())
@@ -198,13 +228,10 @@ namespace PayrollSystem.ViewModels
                     cmd.Parameters.AddWithValue("@net", net);
                     cmd.ExecuteNonQuery();
 
-                    // Get last inserted payroll ID and save deductions
                     var payrollId = cmd.LastInsertedId;
-
                     SaveDeduction(conn, payrollId, "SSS", "SSS", sss);
                     SaveDeduction(conn, payrollId, "PAG-IBIG", "PAGIBIG", pagibig);
-                    SaveDeduction(conn, payrollId, "PhilHealth", "PhilHealth", philhealth);
-                    SaveDeduction(conn, payrollId, "Income Tax", "Tax", tax);
+                    SaveDeduction(conn, payrollId, "PhilHealth", "PhilHealth", phil);
                 }
 
                 StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2}";

@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Windows;
-using PayrollSystem.DataAccess;
 using PayrollSystem.ViewModels;
 using PayrollSystem.Views;
 
@@ -14,9 +13,7 @@ namespace PayrollSystem
         {
             InitializeComponent();
 
-            // Try initializing database
-            try { DatabaseHelper.InitializeDatabase(); } catch { }
-
+            // No DB init here — already done in App.xaml.cs background thread
             _viewModel = new MainViewModel();
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             DataContext = _viewModel;
@@ -31,7 +28,6 @@ namespace PayrollSystem
         {
             if (e.PropertyName == nameof(MainViewModel.ActiveNav) && _viewModel.ActiveNav == "Logout")
             {
-                // Show login window again
                 var loginWindow = new LoginWindow();
                 loginWindow.Show();
                 this.Close();

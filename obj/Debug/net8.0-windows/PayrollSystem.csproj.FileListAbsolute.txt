@@ -48,3 +48,4 @@ C:\Payroll System\obj\Debug\net8.0-windows\refint\PayrollSystem.dll
 C:\Payroll System\obj\Debug\net8.0-windows\PayrollSystem.pdb
 C:\Payroll System\obj\Debug\net8.0-windows\PayrollSystem.genruntimeconfig.cache
 C:\Payroll System\obj\Debug\net8.0-windows\ref\PayrollSystem.dll
+C:\Payroll System\obj\Debug\net8.0-windows\PayrollSystem.sourcelink.json

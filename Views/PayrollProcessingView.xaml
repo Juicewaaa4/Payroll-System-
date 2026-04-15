@@ -9,7 +9,7 @@
             <!-- Header -->
             <TextBlock Text="Payroll Processing" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
             <TextBlock Text="Calculate and process employee payroll" Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="13" Margin="0,0,0,28"/>
+                       FontSize="13" Margin="0,0,0,24"/>
 
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -21,17 +21,21 @@
                 <!-- ═══ LEFT: Input Panel ═══ -->
                 <Border Grid.Column="0" Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="Payroll Details" Style="{StaticResource SectionTitle}" Margin="0,0,0,20"/>
+                        <TextBlock Text="Payroll Details" Style="{StaticResource SectionTitle}" Margin="0,0,0,16"/>
 
-                        <!-- Employee Selection -->
+                        <!-- Searchable Employee Selection -->
+                        <TextBlock Text="SEARCH EMPLOYEE" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Style="{StaticResource ModernTextBox}" Margin="0,0,0,6"
+                                 Text="{Binding EmployeeSearch, UpdateSourceTrigger=PropertyChanged}"/>
+
                         <TextBlock Text="SELECT EMPLOYEE" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox ItemsSource="{Binding Employees}"
+                        <ComboBox ItemsSource="{Binding FilteredEmployees}"
                                   SelectedItem="{Binding SelectedEmployee}"
                                   DisplayMemberPath="FullName"
                                   Style="{StaticResource ModernComboBox}" Margin="0,0,0,16"/>
 
                         <!-- Period -->
-                        <Grid Margin="0,0,0,16">
+                        <Grid Margin="0,0,0,14">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="12"/>
@@ -87,33 +91,33 @@
 
                         <!-- Process Button -->
                         <Button Content="💵  Process Payroll" Style="{StaticResource PrimaryButton}"
-                                Command="{Binding ProcessPayrollCommand}" Height="44" FontSize="14"/>
+                                Command="{Binding ProcessPayrollCommand}" Height="42" FontSize="13"/>
 
                         <!-- Status Message -->
                         <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource PrimaryBrush}"
-                                   FontSize="12" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                   FontSize="12" Margin="0,10,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
                 <!-- ═══ RIGHT: Computation Panel ═══ -->
                 <Border Grid.Column="2" Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Text="Salary Computation" Style="{StaticResource SectionTitle}" Margin="0,0,0,20"/>
+                        <TextBlock Text="Salary Computation" Style="{StaticResource SectionTitle}" Margin="0,0,0,16"/>
 
                         <!-- Earnings -->
-                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Text="EARNINGS" FontSize="11" FontWeight="Bold"
-                                           Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,12"/>
-                                <Grid Margin="0,0,0,6">
+                                           Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,10"/>
+                                <Grid Margin="0,0,0,5">
                                     <TextBlock Text="Basic Salary" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
                                     <TextBlock Text="{Binding BasicSalary}" HorizontalAlignment="Right" FontSize="13" FontWeight="SemiBold"/>
                                 </Grid>
-                                <Grid Margin="0,0,0,6">
+                                <Grid Margin="0,0,0,5">
                                     <TextBlock Text="Overtime Pay" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
                                     <TextBlock Text="{Binding OvertimePay}" HorizontalAlignment="Right" FontSize="13"/>
                                 </Grid>
-                                <Grid Margin="0,0,0,6">
+                                <Grid>
                                     <TextBlock Text="Holiday Pay" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
                                     <TextBlock Text="{Binding HolidayPay}" HorizontalAlignment="Right" FontSize="13"/>
                                 </Grid>
@@ -121,60 +125,70 @@
                         </Border>
 
                         <!-- Gross -->
-                        <Grid Margin="0,0,0,16">
+                        <Grid Margin="0,0,0,14">
                             <TextBlock Text="Gross Salary" FontSize="14" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding GrossSalary}" HorizontalAlignment="Right" FontSize="16"
                                        FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
                         </Grid>
 
-                        <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,0,0,16"/>
+                        <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,0,0,14"/>
 
-                        <!-- Deductions -->
-                        <Border Background="#FFF3E0" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                        <!-- Editable Deductions -->
+                        <Border Background="#FFF3E0" CornerRadius="8" Padding="16" Margin="0,0,0,14">
                             <StackPanel>
-                                <TextBlock Text="DEDUCTIONS" FontSize="11" FontWeight="Bold"
-                                           Foreground="#E65100" Margin="0,0,0,12"/>
-                                <Grid Margin="0,0,0,6">
-                                    <TextBlock Text="SSS" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                    <TextBlock Text="{Binding SssDeduction}" HorizontalAlignment="Right" FontSize="13" Foreground="#E53935"/>
+                                <TextBlock Text="DEDUCTIONS (editable)" FontSize="11" FontWeight="Bold"
+                                           Foreground="#E65100" Margin="0,0,0,10"/>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="110"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="SSS" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Style="{StaticResource ModernTextBox}" FontSize="12"
+                                             Text="{Binding SssDeduction, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
                                 </Grid>
-                                <Grid Margin="0,0,0,6">
-                                    <TextBlock Text="PAG-IBIG" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                    <TextBlock Text="{Binding PagibigDeduction}" HorizontalAlignment="Right" FontSize="13" Foreground="#E53935"/>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="110"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="PAG-IBIG" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Style="{StaticResource ModernTextBox}" FontSize="12"
+                                             Text="{Binding PagibigDeduction, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
                                 </Grid>
-                                <Grid Margin="0,0,0,6">
-                                    <TextBlock Text="PhilHealth" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                    <TextBlock Text="{Binding PhilhealthDeduction}" HorizontalAlignment="Right" FontSize="13" Foreground="#E53935"/>
-                                </Grid>
-                                <Grid Margin="0,0,0,6">
-                                    <TextBlock Text="Income Tax" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                    <TextBlock Text="{Binding TaxDeduction}" HorizontalAlignment="Right" FontSize="13" Foreground="#E53935"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="110"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="PhilHealth" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Style="{StaticResource ModernTextBox}" FontSize="12"
+                                             Text="{Binding PhilhealthDeduction, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
                                 </Grid>
                             </StackPanel>
                         </Border>
 
                         <!-- Total Deductions -->
-                        <Grid Margin="0,0,0,16">
+                        <Grid Margin="0,0,0,14">
                             <TextBlock Text="Total Deductions" FontSize="14" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding TotalDeductions}" HorizontalAlignment="Right" FontSize="14"
                                        FontWeight="SemiBold" Foreground="#E53935"/>
                         </Grid>
 
-                        <Border Height="2" Background="{StaticResource PrimaryBrush}" Margin="0,0,0,16"/>
+                        <Border Height="2" Background="{StaticResource PrimaryBrush}" Margin="0,0,0,14"/>
 
                         <!-- NET PAY -->
-                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="20">
+                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="18">
                             <Grid>
-                                <TextBlock Text="NET PAY" FontSize="16" FontWeight="Bold"
+                                <TextBlock Text="NET PAY" FontSize="15" FontWeight="Bold"
                                            Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding NetPay}" HorizontalAlignment="Right" FontSize="24"
+                                <TextBlock Text="{Binding NetPay}" HorizontalAlignment="Right" FontSize="22"
                                            FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
                             </Grid>
                         </Border>
                     </StackPanel>
                 </Border>
             </Grid>
-
         </StackPanel>
     </ScrollViewer>
 </UserControl>

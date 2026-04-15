@@ -7,9 +7,41 @@
         <StackPanel Margin="32,28,32,32">
 
             <!-- Header -->
-            <TextBlock Text="Reports &amp; Transaction History" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
+            <DockPanel Margin="0,0,0,4">
+                <TextBlock Text="Reports &amp; Transaction History" Style="{StaticResource PageTitle}" DockPanel.Dock="Left"/>
+                <!-- Export Button -->
+                <Button DockPanel.Dock="Right" VerticalAlignment="Center" Cursor="Hand"
+                        Command="{Binding ExportExcelCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="exportBg" Background="{StaticResource PrimaryBrush}"
+                                    CornerRadius="8" Padding="14,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📊" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Export Excel" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="White" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="exportBg" Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="{StaticResource HoverGreen}"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </DockPanel>
             <TextBlock Text="View and filter payroll transaction records" Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="13" Margin="0,0,0,24"/>
+
+            <!-- Status Message -->
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource PrimaryBrush}"
+                       FontSize="12" Margin="0,0,0,8"
+                       Visibility="{Binding StatusMessage, Converter={StaticResource StringToVisConverter}}"/>
 
             <!-- Filter Bar -->
             <Border Style="{StaticResource Card}" Padding="20" Margin="0,0,0,20">
@@ -39,15 +71,22 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="EMP #" Binding="{Binding EmpNumber}" Width="90"/>
                             <DataGridTextColumn Header="Employee" Binding="{Binding EmployeeName}" Width="*"/>
-                            <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="120"/>
-                            <DataGridTextColumn Header="Gross Salary" Binding="{Binding GrossSalary}" Width="130"/>
-                            <DataGridTextColumn Header="Deductions" Binding="{Binding Deductions}" Width="120"/>
-                            <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="130"/>
+                            <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="170"/>
+                            <DataGridTextColumn Header="Gross Salary" Binding="{Binding GrossSalary}" Width="120"/>
+                            <DataGridTextColumn Header="Deductions" Binding="{Binding Deductions}" Width="110"/>
+                            <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="120"/>
                             <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </StackPanel>
             </Border>
+
+            <!-- Footer -->
+            <TextBlock Margin="4,10,0,0" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                <Run Text="Showing "/>
+                <Run Text="{Binding PayrollRecords.Count, Mode=OneWay}"/>
+                <Run Text=" record(s)"/>
+            </TextBlock>
 
         </StackPanel>
     </ScrollViewer>

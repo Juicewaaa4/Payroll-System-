@@ -219,7 +219,6 @@ namespace PayrollSystem.ViewModels
                     }
                     else
                     {
-                        // Generate emp number
                         using var countCmd = new MySqlCommand("SELECT COUNT(*) FROM employees", conn);
                         var count = Convert.ToInt32(countCmd.ExecuteScalar()) + 1;
                         var empNum = $"EMP-{count:D4}";
@@ -236,11 +235,53 @@ namespace PayrollSystem.ViewModels
                         cmd.Parameters.AddWithValue("@hd", DateTime.Parse(FormHireDate));
                         cmd.ExecuteNonQuery();
                     }
-                }
 
-                IsFormVisible = false;
-                FormError = "";
-                LoadEmployees();
+                    IsFormVisible = false;
+                    FormError = "";
+                    LoadEmployees();
+                }
+                else
+                {
+                    // Demo mode: update in-memory
+                    if (IsEditing && SelectedEmployee != null)
+                    {
+                        // Update directly in the Employees collection
+                        var emp = Employees.FirstOrDefault(e => e.Id == SelectedEmployee.Id);
+                        if (emp != null)
+                        {
+                            emp.FirstName = FormFirstName;
+                            emp.LastName = FormLastName;
+                            emp.FullName = $"{FormFirstName} {FormLastName}";
+                            emp.Position = FormPosition;
+                            emp.DailyRate = rate;
+                            emp.DailyRateFormatted = $"₱{rate:N2}";
+                            emp.Department = FormDepartment;
+                        }
+                    }
+                    else
+                    {
+                        var newId = Employees.Count > 0 ? Employees.Max(e => e.Id) + 1 : 1;
+                        Employees.Add(new EmployeeItem
+                        {
+                            Id = newId,
+                            EmpNumber = $"EMP-{newId:D4}",
+                            FirstName = FormFirstName,
+                            LastName = FormLastName,
+                            FullName = $"{FormFirstName} {FormLastName}",
+                            Position = FormPosition,
+                            DailyRate = rate,
+                            DailyRateFormatted = $"₱{rate:N2}",
+                            Department = FormDepartment,
+                            HireDate = DateTime.TryParse(FormHireDate, out var hd) ? hd : DateTime.Now,
+                            IsActive = true,
+                            Status = "Active"
+                        });
+                    }
+
+                    IsFormVisible = false;
+                    FormError = "";
+                    FilterEmployees();
+                }
             }
             catch (Exception ex)
             {
