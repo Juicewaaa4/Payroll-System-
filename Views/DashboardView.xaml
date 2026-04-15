@@ -1,0 +1,74 @@
+<UserControl x:Class="PayrollSystem.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundBrush}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,28,32,32">
+
+            <!-- Page Header -->
+            <TextBlock Text="{Binding Greeting}" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
+            <TextBlock Text="{Binding CurrentDate}" Style="{StaticResource FieldLabel}" FontSize="13" Margin="0,0,0,28"/>
+
+            <!-- Stat Cards Row -->
+            <UniformGrid Columns="4" Margin="0,0,0,28">
+                <!-- Total Employees -->
+                <Border Style="{StaticResource StatCard}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="👥" FontSize="24" Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding TotalEmployees}" Style="{StaticResource StatValue}"/>
+                        <TextBlock Text="Total Employees" Style="{StaticResource StatLabel}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Active Departments -->
+                <Border Style="{StaticResource StatCard}" Margin="6,0">
+                    <StackPanel>
+                        <TextBlock Text="🏢" FontSize="24" Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding ActiveDepartments}" Style="{StaticResource StatValue}"/>
+                        <TextBlock Text="Departments" Style="{StaticResource StatLabel}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Total Payroll -->
+                <Border Style="{StaticResource StatCard}" Margin="6,0">
+                    <StackPanel>
+                        <TextBlock Text="💰" FontSize="24" Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding TotalPayroll}" Style="{StaticResource StatValue}" FontSize="22"/>
+                        <TextBlock Text="Payroll This Month" Style="{StaticResource StatLabel}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Pending -->
+                <Border Style="{StaticResource StatCard}" Margin="12,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="📝" FontSize="24" Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding PendingPayroll}" Style="{StaticResource StatValue}"/>
+                        <TextBlock Text="Pending Payroll" Style="{StaticResource StatLabel}"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Recent Activity -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Recent Activity" Style="{StaticResource SectionTitle}" Margin="0,0,0,16"/>
+
+                    <DataGrid ItemsSource="{Binding RecentActivities}"
+                              Style="{StaticResource ModernDataGrid}"
+                              ColumnHeaderStyle="{StaticResource ModernDataGridColumnHeader}"
+                              CellStyle="{StaticResource ModernDataGridCell}"
+                              RowStyle="{StaticResource ModernDataGridRow}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*"/>
+                            <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="120"/>
+                            <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="120"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,17 @@
+<Application x:Class="PayrollSystem.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:PayrollSystem.Helpers"
+             StartupUri="Views/LoginWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/GreenTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Converters -->
+            <helpers:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
+            <helpers:StringToVisibilityConverter x:Key="StringToVisConverter"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
