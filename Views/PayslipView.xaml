@@ -46,31 +46,59 @@
                     <WrapPanel Grid.Row="2">
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="DAYS" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource ModernTextBox}" Width="55" Text="{Binding WorkDays, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="50" FontSize="13"
+                                         Padding="6,8" Text="{Binding WorkDays, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="OT HRS" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource ModernTextBox}" Width="55" Text="{Binding OvertimeHours, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="50" FontSize="13"
+                                         Padding="6,8" Text="{Binding OvertimeHours, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="HOLIDAY" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource ModernTextBox}" Width="55" Text="{Binding HolidayHours, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="50" FontSize="13"
+                                         Padding="6,8" Text="{Binding HolidayHours, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="ALLOW" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource ModernTextBox}" Width="65" Text="{Binding AllowanceInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                         Padding="6,8" Text="{Binding AllowanceInput, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="BONUS" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource ModernTextBox}" Width="65" Text="{Binding BonusInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                         Padding="6,8" Text="{Binding BonusInput, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="LOAN" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource ModernTextBox}" Width="65" Text="{Binding LoanInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                         Padding="6,8" Text="{Binding LoanInput, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,0">
                             <TextBlock Text="OTHERS" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource ModernTextBox}" Width="65" Text="{Binding OthersInput, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                         Padding="6,8" Text="{Binding OthersInput, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                     </WrapPanel>
                 </Grid>

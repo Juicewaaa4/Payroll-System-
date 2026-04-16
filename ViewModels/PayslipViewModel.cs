@@ -131,47 +131,45 @@ namespace PayrollSystem.ViewModels
 
         public void LoadEmployees()
         {
-            Employees.Clear();
             try
             {
-                if (DatabaseHelper.TestConnection())
+                if (!DatabaseHelper.TestConnection())
                 {
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
-                    using var cmd = new MySqlCommand("SELECT id, emp_number, first_name, last_name, position, daily_rate FROM employees WHERE is_active = 1 ORDER BY last_name", conn);
-                    using var reader = cmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        Employees.Add(new EmployeeItem
-                        {
-                            Id = reader.GetInt32("id"),
-                            EmpNumber = reader.GetString("emp_number"),
-                            FirstName = reader.GetString("first_name"),
-                            LastName = reader.GetString("last_name"),
-                            FullName = $"{reader.GetString("first_name")} {reader.GetString("last_name")}",
-                            Position = reader.GetString("position"),
-                            DailyRate = reader.GetDecimal("daily_rate"),
-                        });
-                    }
+                    if (DemoDatabase.Employees == null) DemoDatabase.Initialize();
+                    
+                    Employees.Clear();
+                    foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
+                    
                     FilterEmployees();
                     return;
                 }
+
+                Employees.Clear();
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+                using var cmd = new MySqlCommand("SELECT id, emp_number, first_name, last_name, position, daily_rate FROM employees WHERE is_active = 1 ORDER BY last_name", conn);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    Employees.Add(new EmployeeItem
+                    {
+                        Id = reader.GetInt32("id"),
+                        EmpNumber = reader.GetString("emp_number"),
+                        FirstName = reader.GetString("first_name"),
+                        LastName = reader.GetString("last_name"),
+                        FullName = $"{reader.GetString("first_name")} {reader.GetString("last_name")}",
+                        Position = reader.GetString("position"),
+                        DailyRate = reader.GetDecimal("daily_rate"),
+                    });
+                }
+                FilterEmployees();
+                return;
             }
             catch { }
 
-            // Demo
-            var demo = new[] {
-                (1, "EMP-0001", "Kenneth Ariel", "Francisco", "Administrator", 1200m),
-                (2, "EMP-0002", "Judy", "Peralta", "HR Manager", 1500m),
-                (3, "EMP-0003", "Trecia", "De Jesus", "Office Administrator", 1100m),
-                (4, "EMP-0004", "Alyssa Marie", "Zamudio", "Restaurant Manager", 1000m),
-                (5, "EMP-0005", "Alliyah", "Lobendino", "Head Chef", 950m),
-                (6, "EMP-0006", "Cristel Khaye", "Sevilla", "Service Staff", 650m),
-                (7, "EMP-0007", "Michael", "Villasenor", "Kitchen Staff", 600m),
-                (8, "EMP-0008", "Beverly", "Gabriel", "Cashier", 550m),
-            };
-            foreach (var (id, num, fn, ln, pos, rate) in demo)
-                Employees.Add(new EmployeeItem { Id = id, EmpNumber = num, FirstName = fn, LastName = ln, FullName = $"{fn} {ln}", Position = pos, DailyRate = rate });
+            if (DemoDatabase.Employees == null) DemoDatabase.Initialize();
+            Employees.Clear();
+            foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
             FilterEmployees();
         }
 
@@ -185,6 +183,10 @@ namespace PayrollSystem.ViewModels
                     e.EmpNumber.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase) ||
                     e.Position.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase)));
             foreach (var emp in filtered) FilteredEmployees.Add(emp);
+
+            // Auto-select first match for instant feedback
+            if (!string.IsNullOrWhiteSpace(EmployeeSearch) && FilteredEmployees.Count > 0)
+                SelectedEmployee = FilteredEmployees[0];
         }
 
         private void OnEmployeeSelected()
@@ -276,9 +278,152 @@ namespace PayrollSystem.ViewModels
 
         private void PrintPayslip()
         {
-            System.Windows.MessageBox.Show(
-                $"Payslip for {EmployeeName}\nNet Pay: ₱{NetPay}\n\nPrint functionality ready for production.",
-                "Print Payslip", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            if (SelectedEmployee == null)
+            {
+                System.Windows.MessageBox.Show("Please select an employee first.", "Print Payslip",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                var printDialog = new System.Windows.Controls.PrintDialog();
+                if (printDialog.ShowDialog() != true) return;
+
+                // Build a FlowDocument for the payslip
+                var doc = new System.Windows.Documents.FlowDocument();
+                doc.PageWidth = printDialog.PrintableAreaWidth;
+                doc.PagePadding = new System.Windows.Thickness(40, 30, 40, 30);
+                doc.FontFamily = new System.Windows.Media.FontFamily("Segoe UI");
+                doc.FontSize = 12;
+
+                // Company Header
+                var headerPara = new System.Windows.Documents.Paragraph();
+                headerPara.FontSize = 18;
+                headerPara.FontWeight = System.Windows.FontWeights.Bold;
+                headerPara.Foreground = System.Windows.Media.Brushes.DarkGreen;
+                headerPara.Inlines.Add(new System.Windows.Documents.Run(CompanyName));
+                doc.Blocks.Add(headerPara);
+
+                var addrPara = new System.Windows.Documents.Paragraph();
+                addrPara.FontSize = 10;
+                addrPara.Foreground = System.Windows.Media.Brushes.Gray;
+                addrPara.Margin = new System.Windows.Thickness(0, 0, 0, 4);
+                addrPara.Inlines.Add(new System.Windows.Documents.Run(CompanyAddress));
+                doc.Blocks.Add(addrPara);
+
+                var periodPara = new System.Windows.Documents.Paragraph();
+                periodPara.FontSize = 10;
+                periodPara.Margin = new System.Windows.Thickness(0, 0, 0, 10);
+                periodPara.Inlines.Add(new System.Windows.Documents.Run(PeriodText));
+                doc.Blocks.Add(periodPara);
+
+                // Separator
+                doc.Blocks.Add(CreateSeparator());
+
+                // Employee Info
+                AddLabelValue(doc, "Employee", $"{EmployeeName}   ({EmpNumber})");
+                AddLabelValue(doc, "Position", Position);
+                AddLabelValue(doc, "Rate/Day", $"₱{RatePerDay}");
+
+                doc.Blocks.Add(CreateSeparator());
+
+                // Earnings
+                var earningsHeader = new System.Windows.Documents.Paragraph();
+                earningsHeader.FontWeight = System.Windows.FontWeights.Bold;
+                earningsHeader.FontSize = 13;
+                earningsHeader.Margin = new System.Windows.Thickness(0, 8, 0, 4);
+                earningsHeader.Inlines.Add(new System.Windows.Documents.Run("EARNINGS"));
+                doc.Blocks.Add(earningsHeader);
+
+                AddLabelValue(doc, "Basic Salary", $"₱{BasicSalary}");
+                AddLabelValue(doc, "Overtime Pay", $"₱{OtPay}");
+                AddLabelValue(doc, "Allowance", $"₱{AllowanceTotal}");
+                AddLabelValue(doc, "Holiday Pay", $"₱{HolidayPay}");
+                AddLabelValue(doc, "Bonus", $"₱{BonusAmount}");
+                AddLabelValueBold(doc, "Gross Salary", $"₱{GrossSalary}");
+
+                doc.Blocks.Add(CreateSeparator());
+
+                // Deductions
+                var dedHeader = new System.Windows.Documents.Paragraph();
+                dedHeader.FontWeight = System.Windows.FontWeights.Bold;
+                dedHeader.FontSize = 13;
+                dedHeader.Margin = new System.Windows.Thickness(0, 8, 0, 4);
+                dedHeader.Inlines.Add(new System.Windows.Documents.Run("DEDUCTIONS"));
+                doc.Blocks.Add(dedHeader);
+
+                AddLabelValue(doc, "SSS", $"₱{Sss}");
+                AddLabelValue(doc, "PAG-IBIG", $"₱{Pagibig}");
+                AddLabelValue(doc, "PhilHealth", $"₱{Philhealth}");
+                AddLabelValue(doc, "Loan", $"₱{Loan}");
+                AddLabelValue(doc, "Others", $"₱{Others}");
+                AddLabelValueBold(doc, "Total Deductions", $"₱{TotalDeductions}");
+
+                doc.Blocks.Add(CreateSeparator());
+
+                // Net Pay
+                var netPara = new System.Windows.Documents.Paragraph();
+                netPara.FontSize = 16;
+                netPara.FontWeight = System.Windows.FontWeights.Bold;
+                netPara.Margin = new System.Windows.Thickness(0, 10, 0, 10);
+                netPara.Inlines.Add(new System.Windows.Documents.Run("NET PAY:   "));
+                netPara.Inlines.Add(new System.Windows.Documents.Run($"₱{NetPay}") { Foreground = System.Windows.Media.Brushes.DarkGreen });
+                doc.Blocks.Add(netPara);
+
+                doc.Blocks.Add(CreateSeparator());
+
+                // Signatures
+                var sigPara = new System.Windows.Documents.Paragraph();
+                sigPara.FontSize = 11;
+                sigPara.Margin = new System.Windows.Thickness(0, 20, 0, 0);
+                sigPara.Inlines.Add(new System.Windows.Documents.Run($"Prepared By: {PreparedBy}"));
+                sigPara.Inlines.Add(new System.Windows.Documents.Run("                    "));
+                sigPara.Inlines.Add(new System.Windows.Documents.Run($"Approved By: {ApprovedBy}"));
+                doc.Blocks.Add(sigPara);
+
+                // Print
+                var paginator = ((System.Windows.Documents.IDocumentPaginatorSource)doc).DocumentPaginator;
+                printDialog.PrintDocument(paginator, $"Payslip - {EmployeeName}");
+
+                System.Windows.MessageBox.Show("Payslip sent to printer successfully!",
+                    "Print Complete", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Print error: {ex.Message}", "Print Error",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private static System.Windows.Documents.BlockUIContainer CreateSeparator()
+        {
+            var line = new System.Windows.Controls.Border
+            {
+                Height = 1,
+                Background = System.Windows.Media.Brushes.LightGray,
+                Margin = new System.Windows.Thickness(0, 4, 0, 4)
+            };
+            return new System.Windows.Documents.BlockUIContainer(line);
+        }
+
+        private static void AddLabelValue(System.Windows.Documents.FlowDocument doc, string label, string value)
+        {
+            var para = new System.Windows.Documents.Paragraph();
+            para.Margin = new System.Windows.Thickness(0, 2, 0, 2);
+            para.Inlines.Add(new System.Windows.Documents.Run($"{label,-25}") { Foreground = System.Windows.Media.Brushes.Gray });
+            para.Inlines.Add(new System.Windows.Documents.Run(value));
+            doc.Blocks.Add(para);
+        }
+
+        private static void AddLabelValueBold(System.Windows.Documents.FlowDocument doc, string label, string value)
+        {
+            var para = new System.Windows.Documents.Paragraph();
+            para.Margin = new System.Windows.Thickness(0, 4, 0, 4);
+            para.FontWeight = System.Windows.FontWeights.SemiBold;
+            para.Inlines.Add(new System.Windows.Documents.Run($"{label,-25}"));
+            para.Inlines.Add(new System.Windows.Documents.Run(value));
+            doc.Blocks.Add(para);
         }
     }
 }

@@ -58,17 +58,27 @@ namespace PayrollSystem.ViewModels
 
         public void LoadEmployees()
         {
-            Employees.Clear();
-            Departments.Clear();
-
             try
             {
                 if (!DatabaseHelper.TestConnection())
                 {
-                    LoadDemoData();
+                    if (DemoDatabase.Employees == null) DemoDatabase.Initialize();
+                    
+                    Employees.Clear();
+                    foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
+                    
+                    if (Departments.Count == 0)
+                    {
+                        Departments.Add("ADMIN");
+                        Departments.Add("Zoey's Eatery");
+                        Departments.Add("Billiard Tenant");
+                    }
                     FilterEmployees();
                     return;
                 }
+
+                Employees.Clear();
+                Departments.Clear();
 
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
@@ -261,7 +271,7 @@ namespace PayrollSystem.ViewModels
                     else
                     {
                         var newId = Employees.Count > 0 ? Employees.Max(e => e.Id) + 1 : 1;
-                        Employees.Add(new EmployeeItem
+                        var newEmp = new EmployeeItem
                         {
                             Id = newId,
                             EmpNumber = $"EMP-{newId:D4}",
@@ -275,7 +285,9 @@ namespace PayrollSystem.ViewModels
                             HireDate = DateTime.TryParse(FormHireDate, out var hd) ? hd : DateTime.Now,
                             IsActive = true,
                             Status = "Active"
-                        });
+                        };
+                        Employees.Add(newEmp);
+                        if (DemoDatabase.Employees != null) DemoDatabase.Employees.Add(newEmp);
                     }
 
                     IsFormVisible = false;

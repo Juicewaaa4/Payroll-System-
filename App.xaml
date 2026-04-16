@@ -12,6 +12,7 @@
             <!-- Converters -->
             <helpers:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
             <helpers:StringToVisibilityConverter x:Key="StringToVisConverter"/>
+            <helpers:NullToVisibilityConverter x:Key="NullToVisConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

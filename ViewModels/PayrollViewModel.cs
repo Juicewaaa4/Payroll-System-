@@ -65,56 +65,47 @@ namespace PayrollSystem.ViewModels
 
         public void LoadData()
         {
-            Employees.Clear();
             try
             {
-                if (DatabaseHelper.TestConnection())
+                if (!DatabaseHelper.TestConnection())
                 {
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
-                    using var cmd = new MySqlCommand("SELECT id, emp_number, first_name, last_name, position, daily_rate FROM employees WHERE is_active = 1 ORDER BY last_name", conn);
-                    using var reader = cmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        Employees.Add(new EmployeeItem
-                        {
-                            Id = reader.GetInt32("id"),
-                            EmpNumber = reader.GetString("emp_number"),
-                            FirstName = reader.GetString("first_name"),
-                            LastName = reader.GetString("last_name"),
-                            FullName = $"{reader.GetString("first_name")} {reader.GetString("last_name")}",
-                            Position = reader.GetString("position"),
-                            DailyRate = reader.GetDecimal("daily_rate"),
-                            DailyRateFormatted = $"₱{reader.GetDecimal("daily_rate"):N2}"
-                        });
-                    }
+                    if (DemoDatabase.Employees == null) DemoDatabase.Initialize();
+                    
+                    Employees.Clear();
+                    foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
+                    
+                    FilterEmployees();
+                    return;
                 }
-                else LoadDemoEmployees();
+
+                Employees.Clear();
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+                using var cmd = new MySqlCommand("SELECT id, emp_number, first_name, last_name, position, daily_rate FROM employees WHERE is_active = 1 ORDER BY last_name", conn);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    Employees.Add(new EmployeeItem
+                    {
+                        Id = reader.GetInt32("id"),
+                        EmpNumber = reader.GetString("emp_number"),
+                        FirstName = reader.GetString("first_name"),
+                        LastName = reader.GetString("last_name"),
+                        FullName = $"{reader.GetString("first_name")} {reader.GetString("last_name")}",
+                        Position = reader.GetString("position"),
+                        DailyRate = reader.GetDecimal("daily_rate"),
+                        DailyRateFormatted = $"₱{reader.GetDecimal("daily_rate"):N2}"
+                    });
+                }
             }
-            catch { LoadDemoEmployees(); }
+            catch 
+            { 
+                if (DemoDatabase.Employees == null) DemoDatabase.Initialize();
+                Employees.Clear();
+                foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
+            }
 
             FilterEmployees();
-        }
-
-        private void LoadDemoEmployees()
-        {
-            var demo = new[] {
-                (1, "EMP-0001", "Kenneth Ariel", "Francisco", "Administrator", 1200m),
-                (2, "EMP-0002", "Judy", "Peralta", "HR Manager", 1500m),
-                (3, "EMP-0003", "Trecia", "De Jesus", "Office Administrator", 1100m),
-                (4, "EMP-0004", "Alyssa Marie", "Zamudio", "Restaurant Manager", 1000m),
-                (5, "EMP-0005", "Alliyah", "Lobendino", "Head Chef", 950m),
-                (6, "EMP-0006", "Cristel Khaye", "Sevilla", "Service Staff", 650m),
-                (7, "EMP-0007", "Michael", "Villasenor", "Kitchen Staff", 600m),
-                (8, "EMP-0008", "Beverly", "Gabriel", "Cashier", 550m),
-                (9, "EMP-0009", "Charmine", "Resus", "Cashier", 550m),
-                (10, "EMP-0010", "Kiven", "Paez", "Service Staff", 600m),
-                (11, "EMP-0011", "Lucky", "Flores", "Billiard Manager", 800m),
-                (12, "EMP-0012", "Romez", "Bautista", "Game Attendant", 500m),
-                (13, "EMP-0013", "Jerryco", "Viador", "Game Attendant", 500m),
-            };
-            foreach (var (id, num, fn, ln, pos, rate) in demo)
-                Employees.Add(new EmployeeItem { Id = id, EmpNumber = num, FirstName = fn, LastName = ln, FullName = $"{fn} {ln}", Position = pos, DailyRate = rate, DailyRateFormatted = $"₱{rate:N2}" });
         }
 
         private void FilterEmployees()
@@ -127,6 +118,10 @@ namespace PayrollSystem.ViewModels
                     e.EmpNumber.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase) ||
                     e.Position.Contains(EmployeeSearch, StringComparison.OrdinalIgnoreCase)));
             foreach (var emp in filtered) FilteredEmployees.Add(emp);
+
+            // Auto-select first match for instant feedback
+            if (!string.IsNullOrWhiteSpace(EmployeeSearch) && FilteredEmployees.Count > 0)
+                SelectedEmployee = FilteredEmployees[0];
         }
 
         private void ComputeSalary()

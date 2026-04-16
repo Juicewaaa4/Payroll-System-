@@ -118,10 +118,18 @@ namespace PayrollSystem.ViewModels
 
         private void Logout()
         {
-            CurrentUserName = "";
-            CurrentUserRole = "";
-            ActiveNav = "Logout";
-            OnPropertyChanged(nameof(ActiveNav));
+            var result = System.Windows.MessageBox.Show(
+                "Are you sure you want to logout?",
+                "Confirm Logout",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Question);
+
+            if (result == System.Windows.MessageBoxResult.Yes)
+            {
+                CurrentUserName = "";
+                CurrentUserRole = "";
+                ActiveNav = "Logout";
+            }
         }
     }
 }
