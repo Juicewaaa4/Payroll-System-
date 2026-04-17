@@ -258,11 +258,8 @@
         <Setter Property="Background" Value="White"/>
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Padding" Value="24"/>
-        <Setter Property="Effect">
-            <Setter.Value>
-                <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.08" Color="Black"/>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="BorderBrush" Value="#E0E0E0"/>
+        <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
     <!-- Stat Card -->
@@ -270,11 +267,8 @@
         <Setter Property="Background" Value="White"/>
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Padding" Value="20"/>
-        <Setter Property="Effect">
-            <Setter.Value>
-                <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.06" Color="Black"/>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="BorderBrush" Value="#E0E0E0"/>
+        <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
     <!-- ─── DataGrid Style ────────────────────────────────────── -->

@@ -92,6 +92,22 @@
                                          TextAlignment="Center"/>
                             </Border>
                         </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock Text="LATE" Style="{StaticResource FieldLabel}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                         Padding="6,8" Text="{Binding LateInput, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock Text="UNDERTIME" Style="{StaticResource FieldLabel}"/>
+                            <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
+                                <TextBox Background="Transparent" BorderThickness="0" Width="70" FontSize="13"
+                                         Padding="6,8" Text="{Binding UndertimeInput, UpdateSourceTrigger=PropertyChanged}"
+                                         TextAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
                         <StackPanel Margin="0,0,0,0">
                             <TextBlock Text="OTHERS" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
@@ -105,245 +121,302 @@
             </Border>
 
             <!-- ═══ PAYSLIP DOCUMENT ═══ -->
-            <Border Background="White" CornerRadius="4" BorderBrush="#D0D0D0" BorderThickness="1" Padding="0">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.08"/>
-                </Border.Effect>
-
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- ROW 0: Company Header -->
-                    <Grid Grid.Row="0" Margin="28,24,28,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="{Binding CompanyName}" FontSize="22" FontWeight="Bold" Foreground="#1B5E20"/>
-                            <TextBlock Text="{Binding CompanyAddress}" FontSize="12" FontStyle="Italic" Foreground="#757575" Margin="0,2,0,0"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                            <TextBlock Text="{Binding PeriodText}" FontSize="11" Foreground="#757575" HorizontalAlignment="Right"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
-                                <TextBlock Text="EMP #" FontSize="12" FontWeight="SemiBold" Foreground="#424242"
-                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <Border BorderBrush="#4CAF50" BorderThickness="1.5" CornerRadius="3" Padding="2,0">
-                                    <TextBox Text="{Binding EmpNumber, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="13" FontWeight="Bold" Foreground="#1B5E20"
-                                             Background="Transparent" BorderThickness="0"
-                                             Padding="8,4" MinWidth="80"/>
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-                    </Grid>
-
-                    <!-- ROW 1: Employee Info -->
-                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,1" Background="#FAFAFA" Padding="28,12">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,40,0">
-                                <StackPanel Margin="0,0,16,0">
-                                    <TextBlock Text="EMPLOYEE" FontSize="11" FontWeight="Bold" Foreground="#757575"/>
-                                    <TextBlock Text="POSITION" FontSize="11" FontWeight="Bold" Foreground="#757575" Margin="0,4,0,0"/>
-                                </StackPanel>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding EmployeeName}" FontSize="13" FontWeight="SemiBold" Foreground="#212121"/>
-                                    <TextBlock Text="{Binding Position}" FontSize="13" Foreground="#424242" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="RATE/DAY" FontSize="11" FontWeight="Bold" Foreground="#757575"/>
-                                    <TextBlock Text="ALLOW/DAY" FontSize="11" FontWeight="Bold" Foreground="#757575" Margin="0,4,0,0"/>
-                                </StackPanel>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding RatePerDay}" FontSize="13" Foreground="#212121"/>
-                                    <TextBlock Text="{Binding AllowPerDay}" FontSize="13" Foreground="#212121" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Grid>
+            <Border Background="White" CornerRadius="4" BorderBrush="#B0B0B0" BorderThickness="1" Padding="40" Margin="0,20,0,0">
+                <StackPanel>
+                    <!-- Top Header -->
+                    <Border Background="Black" Padding="15">
+                        <TextBlock Text="{Binding CompanyName}" Foreground="White" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </Border>
 
-                    <!-- ROW 2: SALARY Header -->
-                    <Border Grid.Row="2" Background="#E8F5E9" Padding="28,8" BorderBrush="#C8E6C9" BorderThickness="0,0,0,1">
-                        <TextBlock Text="SALARY" FontSize="12" FontWeight="Bold" Foreground="#1B5E20"/>
+                    <!-- Address -->
+                    <TextBlock Text="{Binding CompanyAddress}" Foreground="#333333" FontSize="11" HorizontalAlignment="Center" Margin="0,10,0,10"/>
+                    <Border Height="1" Background="#E8E8E8" Margin="0,5,0,15"/>
+
+                    <!-- Period -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
+                        <TextBlock Text="Payslip for the Period of " FontWeight="Bold" FontSize="13"/>
+                        <TextBlock Text="{Binding PeriodText}" FontWeight="Bold" FontSize="13"/>
+                    </StackPanel>
+
+                    <!-- Employee Info Table -->
+                    <Border BorderBrush="#E8E8E8" BorderThickness="1" Margin="0,0,0,20">
+                        <StackPanel>
+                            <Border Background="#1E7B44" Padding="10,6">
+                                <TextBlock Text="Employee Information" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                            </Border>
+                            <Grid Margin="0,5,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Employee Name:" FontWeight="SemiBold" Padding="10,4"/>
+                                <Border Grid.Row="0" Grid.Column="1" BorderBrush="#757575" BorderThickness="0,0,0,1" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding EmployeeName}" Padding="5,4"/>
+                                </Border>
+                                
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Employee ID:" FontWeight="SemiBold" Padding="10,4"/>
+                                <Border Grid.Row="1" Grid.Column="1" BorderBrush="#757575" BorderThickness="0,0,0,1" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding EmpNumber}" Padding="5,4"/>
+                                </Border>
+                                
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Position:" FontWeight="SemiBold" Padding="10,4"/>
+                                <Border Grid.Row="2" Grid.Column="1" BorderBrush="#757575" BorderThickness="0,0,0,1" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding Position}" Padding="5,4"/>
+                                </Border>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Pay Period:" FontWeight="SemiBold" Padding="10,4"/>
+                                <Border Grid.Row="3" Grid.Column="1" BorderBrush="#757575" BorderThickness="0,0,0,1" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding PeriodText}" Padding="5,4"/>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
                     </Border>
 
-                    <!-- ROW 3: Daily Salary Table + Earnings -->
-                    <Grid Grid.Row="3" Margin="28,0,28,0">
+                    <!-- Main Grid Split -->
+                    <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="5.5*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="4.5*"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
-                            <UniformGrid Columns="7" Margin="0,8,0,0">
-                                <TextBlock Text="MON" FontSize="10" FontWeight="Bold" Foreground="#757575" HorizontalAlignment="Center"/>
-                                <TextBlock Text="TUE" FontSize="10" FontWeight="Bold" Foreground="#757575" HorizontalAlignment="Center"/>
-                                <TextBlock Text="WED" FontSize="10" FontWeight="Bold" Foreground="#757575" HorizontalAlignment="Center"/>
-                                <TextBlock Text="THU" FontSize="10" FontWeight="Bold" Foreground="#757575" HorizontalAlignment="Center"/>
-                                <TextBlock Text="FRI" FontSize="10" FontWeight="Bold" Foreground="#757575" HorizontalAlignment="Center"/>
-                                <TextBlock Text="SAT" FontSize="10" FontWeight="Bold" Foreground="#757575" HorizontalAlignment="Center"/>
-                                <TextBlock Text="SUN" FontSize="10" FontWeight="Bold" Foreground="#757575" HorizontalAlignment="Center"/>
-                            </UniformGrid>
-                            <UniformGrid Columns="7" Margin="0,4,0,12">
-                                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="4,6" Margin="1">
-                                    <TextBlock Text="{Binding MonSalary}" FontSize="11" HorizontalAlignment="Center"/>
-                                </Border>
-                                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="4,6" Margin="1">
-                                    <TextBlock Text="{Binding TueSalary}" FontSize="11" HorizontalAlignment="Center"/>
-                                </Border>
-                                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="4,6" Margin="1">
-                                    <TextBlock Text="{Binding WedSalary}" FontSize="11" HorizontalAlignment="Center"/>
-                                </Border>
-                                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="4,6" Margin="1">
-                                    <TextBlock Text="{Binding ThuSalary}" FontSize="11" HorizontalAlignment="Center"/>
-                                </Border>
-                                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="4,6" Margin="1">
-                                    <TextBlock Text="{Binding FriSalary}" FontSize="11" HorizontalAlignment="Center"/>
-                                </Border>
-                                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="4,6" Margin="1" Background="#FAFAFA">
-                                    <TextBlock Text="{Binding SatSalary}" FontSize="11" HorizontalAlignment="Center"/>
-                                </Border>
-                                <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="4,6" Margin="1" Background="#FAFAFA">
-                                    <TextBlock Text="{Binding SunSalary}" FontSize="11" HorizontalAlignment="Center" Foreground="#757575"/>
-                                </Border>
-                            </UniformGrid>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                <TextBlock Text="BASIC SALARY" FontSize="11" FontWeight="Bold" Foreground="#424242" Margin="0,0,20,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding BasicSalary}" FontSize="13" FontWeight="SemiBold" Foreground="#212121" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Earnings Breakdown -->
-                        <StackPanel Grid.Column="1" Margin="0,8,0,0">
-                            <Grid Margin="0,0,0,4">
-                                <TextBlock Text="OT" FontSize="11" Foreground="#757575"/>
-                                <TextBlock Text="{Binding OtPay}" FontSize="12" HorizontalAlignment="Right"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,4">
-                                <TextBlock Text="ALLOW" FontSize="11" Foreground="#757575"/>
-                                <TextBlock Text="{Binding AllowanceTotal}" FontSize="12" HorizontalAlignment="Right"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,4">
-                                <TextBlock Text="HOLIDAY" FontSize="11" Foreground="#757575"/>
-                                <TextBlock Text="{Binding HolidayPay}" FontSize="12" HorizontalAlignment="Right"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,4">
-                                <TextBlock Text="BONUS" FontSize="11" Foreground="#757575"/>
-                                <TextBlock Text="{Binding BonusAmount}" FontSize="12" HorizontalAlignment="Right"/>
-                            </Grid>
-                            <Border Height="1" Background="#E0E0E0" Margin="0,8,0,8"/>
+                        <!-- LEFT: Earnings Table -->
+                        <Border Grid.Column="0" BorderBrush="DarkGray" BorderThickness="1">
                             <Grid>
-                                <TextBlock Text="GROSS SALARY" FontSize="12" FontWeight="Bold" Foreground="#1B5E20"/>
-                                <TextBlock Text="{Binding GrossSalary}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Right" Foreground="#1B5E20"/>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <Border Grid.Row="0" Background="#1E7B44" Padding="10,6" BorderBrush="DarkGray" BorderThickness="0,0,0,1">
+                                    <TextBlock Text="Earnings" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                                </Border>
+                                
+                                <Border Grid.Row="1" Background="#E8E8E8" BorderBrush="DarkGray" BorderThickness="0,0,0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="3*"/>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="1.5*"/>
+                                            <ColumnDefinition Width="2*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Description" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                        <TextBlock Grid.Column="1" Text="Rate Per Day" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                        <TextBlock Grid.Column="2" Text="Days/Hrs" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                        <TextBlock Grid.Column="3" Text="Amount" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                    </Grid>
+                                </Border>
+
+                                <StackPanel Grid.Row="2">
+                                    <StackPanel.Resources>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Margin" Value="0"/>
+                                        </Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Padding" Value="5"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                        </Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="BorderBrush" Value="LightGray"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                        </Style>
+                                    </StackPanel.Resources>
+
+                                    <!-- Data Rows -->
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Basic Salary"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding RatePerDay}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding WorkDays}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding BasicSalary, StringFormat=₱ {0}}" TextAlignment="Right"/>
+                                    </Grid></Border>
+                                    
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Overtime Pay"/>
+                                        <TextBlock Grid.Column="1" Text="-" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding OvertimeHours}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding OtPay, StringFormat=₱ {0}}" TextAlignment="Right"/>
+                                    </Grid></Border>
+
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Holiday Pay"/>
+                                        <TextBlock Grid.Column="1" Text="-" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding HolidayHours}" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding HolidayPay, StringFormat=₱ {0}}" TextAlignment="Right"/>
+                                    </Grid></Border>
+
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Incentives / Bonus"/>
+                                        <TextBlock Grid.Column="1" Text="-" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="-" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding BonusAmount, StringFormat=₱ {0}}" TextAlignment="Right"/>
+                                    </Grid></Border>
+
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Allowance"/>
+                                        <TextBlock Grid.Column="1" Text="-" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="-" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding AllowanceTotal, StringFormat=₱ {0}}" TextAlignment="Right"/>
+                                    </Grid></Border>
+                                    
+                                    <Border Background="#E8E8E8" BorderThickness="0" Margin="0,15,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Gross Earnings" FontWeight="Bold"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding GrossSalary, StringFormat=₱ {0}}" FontWeight="Bold" TextAlignment="Right"/>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
                             </Grid>
-                        </StackPanel>
+                        </Border>
+
+                        <!-- RIGHT: Deductions Table -->
+                        <Border Grid.Column="2" BorderBrush="DarkGray" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <Border Grid.Row="0" Background="#333333" Padding="10,6" BorderBrush="DarkGray" BorderThickness="0,0,0,1">
+                                    <TextBlock Text="Deductions" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                                </Border>
+                                
+                                <Border Grid.Row="1" Background="#E8E8E8" BorderBrush="DarkGray" BorderThickness="0,0,0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="3*"/>
+                                            <ColumnDefinition Width="2*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Description" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                        <TextBlock Grid.Column="1" Text="Amount" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                    </Grid>
+                                </Border>
+
+                                <StackPanel Grid.Row="2">
+                                    <StackPanel.Resources>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Margin" Value="0"/>
+                                        </Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Padding" Value="5"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                        </Style>
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="Padding" Value="5"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="TextAlignment" Value="Right"/>
+                                            <Setter Property="Foreground" Value="#D32F2F"/>
+                                        </Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="BorderBrush" Value="LightGray"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                        </Style>
+                                    </StackPanel.Resources>
+
+                                    <!-- Editable bindings -->
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="SSS Contribution"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Sss, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid></Border>
+                                    
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="PhilHealth"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Philhealth, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid></Border>
+
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Pag-IBIG"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Pagibig, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid></Border>
+
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Loan"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Loan, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid></Border>
+
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Late"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Late, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid></Border>
+
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Undertime"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Undertime, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid></Border>
+
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Other Deductions"/>
+                                        <TextBox Grid.Column="1" Text="{Binding Others, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid></Border>
+
+                                    <!-- Padding equivalent row to match height -->
+                                    <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text=" "/>
+                                        <TextBlock Grid.Column="1" Text=" "/>
+                                    </Grid></Border>
+                                    
+                                    <Border Background="#E8E8E8" BorderThickness="0" Margin="0,15,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Total Deductions" FontWeight="Bold"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TotalDeductions, StringFormat=₱ {0}}" FontWeight="Bold" TextAlignment="Right"/>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                     </Grid>
 
-                    <!-- ROW 4: DEDUCTIONS Header -->
-                    <Border Grid.Row="4" Background="#F5F5F5" Padding="28,8" Margin="0,8,0,0" BorderBrush="#E0E0E0" BorderThickness="0,1,0,1">
-                        <TextBlock Text="DEDUCTIONS" FontSize="12" FontWeight="Bold" Foreground="#424242"/>
+                    <!-- Summary Row -->
+                    <Border Height="1" Background="DarkGray" Margin="0,20,0,10"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                        <TextBlock Text="Gross Earnings – Total Deductions = " FontWeight="Bold" FontSize="15"/>
+                        <TextBlock Text="{Binding NetPay, StringFormat=₱ {0}}" FontWeight="Bold" FontSize="15" Foreground="#1E7B44"/>
+                    </StackPanel>
+                    <Border Height="1" Background="DarkGray" Margin="0,0,0,20"/>
+
+                    <!-- Notes / Signatures -->
+                    <Border BorderBrush="#E8E8E8" BorderThickness="1">
+                        <StackPanel>
+                            <Border Background="#1E7B44" Padding="10,6">
+                                <TextBlock Text="Notes" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                            </Border>
+                            <Grid Margin="10,25,10,25">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <TextBlock Text="Prepared by: " FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBox Text="{Binding PreparedBy, UpdateSourceTrigger=PropertyChanged}" MinWidth="200" Background="Transparent" BorderBrush="Black" BorderThickness="0,0,0,1" Padding="5,2" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <TextBlock Text="Approved by: " FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBox Text="{Binding ApprovedBy, UpdateSourceTrigger=PropertyChanged}" MinWidth="200" Background="Transparent" BorderBrush="Black" BorderThickness="0,0,0,1" Padding="5,2" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
                     </Border>
-
-                    <!-- ROW 5: Deductions Content -->
-                    <Grid Grid.Row="5" Margin="28,12,28,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
-                            <Grid Margin="0,0,0,6">
-                                <TextBlock Text="SSS" FontSize="11" Foreground="#424242" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Sss}" FontSize="12" HorizontalAlignment="Right" Foreground="#E53935" Margin="0,0,30,0"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,6">
-                                <TextBlock Text="PAG-IBIG" FontSize="11" Foreground="#424242" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Pagibig}" FontSize="12" HorizontalAlignment="Right" Foreground="#E53935" Margin="0,0,30,0"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,6">
-                                <TextBlock Text="PHILHEALTH" FontSize="11" Foreground="#424242" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Philhealth}" FontSize="12" HorizontalAlignment="Right" Foreground="#E53935" Margin="0,0,30,0"/>
-                            </Grid>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="1" Margin="0,0,20,0">
-                            <Grid Margin="0,0,0,6">
-                                <TextBlock Text="LOAN" FontSize="11" Foreground="#424242" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Loan}" FontSize="12" HorizontalAlignment="Right" Foreground="#E53935" Margin="0,0,30,0"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,6">
-                                <TextBlock Text="OTHERS" FontSize="11" Foreground="#424242" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Others}" FontSize="12" HorizontalAlignment="Right" Foreground="#E53935" Margin="0,0,30,0"/>
-                            </Grid>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="2" VerticalAlignment="Bottom" Margin="0,0,0,6">
-                            <TextBlock Text="TOTAL DEDUCTIONS:" FontSize="11" FontWeight="Bold" Foreground="#424242" HorizontalAlignment="Right"/>
-                            <TextBlock Text="{Binding TotalDeductions}" FontSize="14" FontWeight="Bold" Foreground="#E53935" HorizontalAlignment="Right" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <!-- ROW 6: NET PAY -->
-                    <Border Grid.Row="6" Background="#2E7D32" Padding="28,14">
-                        <Grid>
-                            <TextBlock Text="NET PAY:" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding NetPay}" FontSize="22" FontWeight="Bold" Foreground="White" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- ROW 7: Signature & Actions -->
-                    <Grid Grid.Row="7" Margin="28,20,28,24">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="40"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="PREPARED BY:" FontSize="11" FontWeight="Bold" Foreground="#757575" Margin="0,0,0,6"/>
-                            <TextBox Text="{Binding PreparedBy, UpdateSourceTrigger=PropertyChanged}"
-                                     FontSize="13" Foreground="#212121"
-                                     Background="Transparent" BorderThickness="0,0,0,1"
-                                     BorderBrush="#BDBDBD" Padding="2,4"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Text="APPROVED BY:" FontSize="11" FontWeight="Bold" Foreground="#757575" Margin="0,0,0,6"/>
-                            <TextBox Text="{Binding ApprovedBy, UpdateSourceTrigger=PropertyChanged}"
-                                     FontSize="13" Foreground="#212121"
-                                     Background="Transparent" BorderThickness="0,0,0,1"
-                                     BorderBrush="#BDBDBD" Padding="2,4"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="20,0,0,0">
-                            <Button Content="🖨  Print" Style="{StaticResource PrimaryButton}"
-                                    Command="{Binding PrintCommand}" Padding="14,8" Margin="0,0,8,0"/>
-                        </StackPanel>
-                    </Grid>
-                </Grid>
+                    
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                        <TextBlock VerticalAlignment="Center" Foreground="#757575" FontSize="12" FontStyle="Italic" Margin="0,0,15,0" Text="Click value numbers inside the table to override deductions 👆"/>
+                        <Button Content="🖨  Print Section" Style="{StaticResource PrimaryButton}" Background="#333333" Command="{Binding DataContext.NavigateBatchPrintCommand, RelativeSource={RelativeSource AncestorType=Window}}" Padding="20,10" Margin="0,0,10,0"/>
+                        <Button Content="🖨  Print This Payslip" Style="{StaticResource PrimaryButton}" Command="{Binding PrintCommand}" Padding="20,10"/>
+                    </StackPanel>
+                </StackPanel>
             </Border>
         </StackPanel>
     </ScrollViewer>

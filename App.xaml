@@ -13,6 +13,8 @@
             <helpers:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
             <helpers:StringToVisibilityConverter x:Key="StringToVisConverter"/>
             <helpers:NullToVisibilityConverter x:Key="NullToVisConverter"/>
+            <helpers:IntToVisibilityConverter x:Key="IntToVisConverter"/>
+            <helpers:EqualsConverter x:Key="EqualsConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

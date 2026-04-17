@@ -144,11 +144,8 @@
         <!-- ═══ ADD/EDIT FORM OVERLAY ═══ -->
         <Border Background="#80000000" Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVisConverter}}"
                 x:Name="FormOverlay">
-            <Border Background="White" Width="420" VerticalAlignment="Center" HorizontalAlignment="Center"
-                    CornerRadius="12" Padding="0">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.15"/>
-                </Border.Effect>
+                <Border Background="White" Width="420" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    CornerRadius="12" Padding="0" BorderBrush="#D0D0D0" BorderThickness="1">
                 <StackPanel>
                     <!-- Modal Header -->
                     <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12,12,0,0" Padding="24,18">
@@ -206,7 +203,8 @@
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="DEPARTMENT" Style="{StaticResource FieldLabel}"/>
                                 <ComboBox ItemsSource="{Binding Departments}"
-                                          SelectedItem="{Binding FormDepartment}"
+                                          Text="{Binding FormDepartment, UpdateSourceTrigger=PropertyChanged}"
+                                          IsEditable="True"
                                           Style="{StaticResource ModernComboBox}"/>
                             </StackPanel>
                         </Grid>
@@ -215,17 +213,66 @@
                         <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding FormHireDate}" Margin="0,0,0,20"/>
 
                         <!-- Action buttons -->
-                        <Grid>
+                        <Grid Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Button Grid.Column="1" Content="Cancel" Style="{StaticResource SecondaryButton}"
-                                    Command="{Binding CancelFormCommand}" Padding="20,9"/>
-                            <Button Grid.Column="3" Content="Save" Style="{StaticResource PrimaryButton}"
-                                    Command="{Binding SaveEmployeeCommand}" Padding="28,9"/>
+
+                            <!-- Cancel Button -->
+                            <Button Grid.Column="0" Command="{Binding CancelFormCommand}" Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="cancelBg" Background="White" CornerRadius="8"
+                                                BorderBrush="#E0E0E0" BorderThickness="1" Padding="0,11">
+                                            <TextBlock Text="Cancel" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="#757575" HorizontalAlignment="Center"
+                                                       FontFamily="{StaticResource PrimaryFont}"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="cancelBg" Property="Background" Value="#F5F5F5"/>
+                                                <Setter TargetName="cancelBg" Property="BorderBrush" Value="#BDBDBD"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+
+                            <!-- Save Button -->
+                            <Button Grid.Column="2" Command="{Binding SaveEmployeeCommand}" Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="saveBg" Background="{StaticResource PrimaryBrush}"
+                                                CornerRadius="8" Padding="0,11">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <TextBlock Text="💾" FontSize="12" Margin="0,0,6,0"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Text="Save Employee" FontSize="13" FontWeight="SemiBold"
+                                                           Foreground="White" VerticalAlignment="Center"
+                                                           FontFamily="{StaticResource PrimaryFont}"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="saveBg" Property="Background">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="{StaticResource HoverGreen}"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="saveBg" Property="Background">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="{StaticResource PrimaryGreenDark}"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
                         </Grid>
                     </StackPanel>
                 </StackPanel>

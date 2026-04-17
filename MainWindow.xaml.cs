@@ -8,6 +8,7 @@ namespace PayrollSystem
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _viewModel;
+        private bool _isLoggingOut = false;
 
         public MainWindow()
         {
@@ -17,6 +18,8 @@ namespace PayrollSystem
             _viewModel = new MainViewModel();
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             DataContext = _viewModel;
+            
+            this.Closing += MainWindow_Closing;
         }
 
         public void SetUser(string name, string role)
@@ -28,9 +31,24 @@ namespace PayrollSystem
         {
             if (e.PropertyName == nameof(MainViewModel.ActiveNav) && _viewModel.ActiveNav == "Logout")
             {
+                _isLoggingOut = true;
                 var loginWindow = new LoginWindow();
                 loginWindow.Show();
                 this.Close();
+            }
+        }
+
+        private void MainWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            if (_isLoggingOut) return;
+
+            var result = MessageBox.Show("Are you sure you want to exit the application?", 
+                                         "Payroll System", 
+                                         MessageBoxButton.YesNo, 
+                                         MessageBoxImage.Question);
+            if (result == MessageBoxResult.No)
+            {
+                e.Cancel = true;
             }
         }
     }

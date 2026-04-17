@@ -81,15 +81,12 @@ namespace PayrollSystem.ViewModels
                     }
                 }
 
-                // Fallback: hardcoded credentials when DB is unavailable
-                if ((Username == "admin" && password == "admin123"))
+                // Fallback when database is not available
+                DemoDatabase.Initialize();
+                var dbUser = DemoDatabase.Users.FirstOrDefault(u => u.Username == Username && u.PasswordHash == password && u.IsActive);
+                if (dbUser != null)
                 {
-                    LoginSuccessful?.Invoke("System Administrator", "Admin");
-                    return;
-                }
-                if ((Username == "staff" && password == "staff123"))
-                {
-                    LoginSuccessful?.Invoke("Staff User", "Staff");
+                    LoginSuccessful?.Invoke(dbUser.FullName, dbUser.Role);
                     return;
                 }
 
@@ -98,14 +95,11 @@ namespace PayrollSystem.ViewModels
             catch (Exception)
             {
                 // Fallback when database is not available
-                if (Username == "admin" && password == "admin123")
+                DemoDatabase.Initialize();
+                var demoUser = DemoDatabase.Users.FirstOrDefault(u => u.Username == Username && u.PasswordHash == password && u.IsActive);
+                if (demoUser != null)
                 {
-                    LoginSuccessful?.Invoke("System Administrator", "Admin");
-                    return;
-                }
-                if (Username == "staff" && password == "staff123")
-                {
-                    LoginSuccessful?.Invoke("Staff User", "Staff");
+                    LoginSuccessful?.Invoke(demoUser.FullName, demoUser.Role);
                     return;
                 }
 

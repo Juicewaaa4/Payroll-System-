@@ -22,8 +22,14 @@
         <DataTemplate DataType="{x:Type vm:PayslipViewModel}">
             <views:PayslipView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BatchPrintViewModel}">
+            <views:BatchPrintView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
             <views:ReportsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView/>
         </DataTemplate>
     </Window.Resources>
 
@@ -53,7 +59,9 @@
                     <Button Content="👥  Employees" Command="{Binding NavigateEmployeesCommand}" Style="{StaticResource NavButton}" x:Name="NavEmployees"/>
                     <Button Content="💵  Payroll" Command="{Binding NavigatePayrollCommand}" Style="{StaticResource NavButton}" x:Name="NavPayroll"/>
                     <Button Content="🧾  Payslip" Command="{Binding NavigatePayslipCommand}" Style="{StaticResource NavButton}" x:Name="NavPayslip"/>
+                    <Button Content="🖨️  Print Section" Command="{Binding NavigateBatchPrintCommand}" Style="{StaticResource NavButton}" x:Name="NavBatchPrint"/>
                     <Button Content="📋  Reports" Command="{Binding NavigateReportsCommand}" Style="{StaticResource NavButton}" x:Name="NavReports"/>
+                    <Button Content="⚙️  Manage Users" Command="{Binding NavigateSettingsCommand}" Style="{StaticResource NavButton}" x:Name="NavSettings" Margin="0,15,0,0"/>
                 </StackPanel>
 
                 <!-- Bottom: User Info & Logout -->

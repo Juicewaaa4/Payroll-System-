@@ -24,6 +24,10 @@ namespace PayrollSystem.ViewModels
         private string _sssDeduction = "0";
         private string _pagibigDeduction = "0";
         private string _philhealthDeduction = "0";
+        private string _loanDeduction = "0";
+        private string _lateDeduction = "0";
+        private string _undertimeDeduction = "0";
+        private string _othersDeduction = "0";
         private string _totalDeductions = "₱0.00";
         private string _netPay = "₱0.00";
         private DateTime _periodStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
@@ -32,7 +36,7 @@ namespace PayrollSystem.ViewModels
 
         public EmployeeItem? SelectedEmployee { get => _selectedEmployee; set { SetProperty(ref _selectedEmployee, value); ComputeSalary(); } }
         public string EmployeeSearch { get => _employeeSearch; set { SetProperty(ref _employeeSearch, value); FilterEmployees(); } }
-        public string WorkDays { get => _workDays; set { SetProperty(ref _workDays, value); ComputeSalary(); } }
+        public string WorkDays { get => _workDays; set { if(SetProperty(ref _workDays, value)) { ComputeSalary(); UpdatePeriodFromDays(); } } }
         public string OvertimeHours { get => _overtimeHours; set { SetProperty(ref _overtimeHours, value); ComputeSalary(); } }
         public string HolidayHours { get => _holidayHours; set { SetProperty(ref _holidayHours, value); ComputeSalary(); } }
         public string Allowance { get => _allowance; set { SetProperty(ref _allowance, value); ComputeSalary(); } }
@@ -45,11 +49,42 @@ namespace PayrollSystem.ViewModels
         public string SssDeduction { get => _sssDeduction; set { SetProperty(ref _sssDeduction, value); ComputeDeductions(); } }
         public string PagibigDeduction { get => _pagibigDeduction; set { SetProperty(ref _pagibigDeduction, value); ComputeDeductions(); } }
         public string PhilhealthDeduction { get => _philhealthDeduction; set { SetProperty(ref _philhealthDeduction, value); ComputeDeductions(); } }
+        public string LoanDeduction { get => _loanDeduction; set { SetProperty(ref _loanDeduction, value); ComputeDeductions(); } }
+        public string LateDeduction { get => _lateDeduction; set { SetProperty(ref _lateDeduction, value); ComputeDeductions(); } }
+        public string UndertimeDeduction { get => _undertimeDeduction; set { SetProperty(ref _undertimeDeduction, value); ComputeDeductions(); } }
+        public string OthersDeduction { get => _othersDeduction; set { SetProperty(ref _othersDeduction, value); ComputeDeductions(); } }
         public string TotalDeductions { get => _totalDeductions; set => SetProperty(ref _totalDeductions, value); }
         public string NetPay { get => _netPay; set => SetProperty(ref _netPay, value); }
-        public DateTime PeriodStart { get => _periodStart; set => SetProperty(ref _periodStart, value); }
-        public DateTime PeriodEnd { get => _periodEnd; set => SetProperty(ref _periodEnd, value); }
+        public DateTime PeriodStart { get => _periodStart; set { if(SetProperty(ref _periodStart, value)) UpdateDaysFromPeriod(); } }
+        public DateTime PeriodEnd { get => _periodEnd; set { if(SetProperty(ref _periodEnd, value)) UpdateDaysFromPeriod(); } }
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
+
+        private bool _isUpdatingDates = false;
+
+        private void UpdatePeriodFromDays()
+        {
+            if (_isUpdatingDates) return;
+
+            if (int.TryParse(WorkDays, out var days) && days > 0)
+            {
+                _isUpdatingDates = true;
+                PeriodEnd = PeriodStart.AddDays(days - 1);
+                _isUpdatingDates = false;
+            }
+        }
+
+        private void UpdateDaysFromPeriod()
+        {
+            if (_isUpdatingDates) return;
+
+            if (PeriodEnd >= PeriodStart)
+            {
+                _isUpdatingDates = true;
+                var diff = (PeriodEnd - PeriodStart).Days + 1;
+                WorkDays = diff.ToString();
+                _isUpdatingDates = false;
+            }
+        }
 
         public ObservableCollection<EmployeeItem> Employees { get; } = new();
         public ObservableCollection<EmployeeItem> FilteredEmployees { get; } = new();
@@ -69,7 +104,7 @@ namespace PayrollSystem.ViewModels
             {
                 if (!DatabaseHelper.TestConnection())
                 {
-                    if (DemoDatabase.Employees == null) DemoDatabase.Initialize();
+                    DemoDatabase.Initialize();
                     
                     Employees.Clear();
                     foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
@@ -100,7 +135,7 @@ namespace PayrollSystem.ViewModels
             }
             catch 
             { 
-                if (DemoDatabase.Employees == null) DemoDatabase.Initialize();
+                DemoDatabase.Initialize();
                 Employees.Clear();
                 foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
             }
@@ -166,8 +201,12 @@ namespace PayrollSystem.ViewModels
             decimal.TryParse(SssDeduction, out var sss);
             decimal.TryParse(PagibigDeduction, out var pagibig);
             decimal.TryParse(PhilhealthDeduction, out var phil);
+            decimal.TryParse(LoanDeduction, out var loan);
+            decimal.TryParse(LateDeduction, out var late);
+            decimal.TryParse(UndertimeDeduction, out var under);
+            decimal.TryParse(OthersDeduction, out var others);
 
-            var totalDed = sss + pagibig + phil;
+            var totalDed = sss + pagibig + phil + loan + late + under + others;
             var net = _cachedGross - totalDed;
 
             TotalDeductions = $"₱{totalDed:N2}";
@@ -188,13 +227,17 @@ namespace PayrollSystem.ViewModels
                 decimal.TryParse(SssDeduction, out var sss);
                 decimal.TryParse(PagibigDeduction, out var pagibig);
                 decimal.TryParse(PhilhealthDeduction, out var phil);
+                decimal.TryParse(LoanDeduction, out var loan);
+                decimal.TryParse(LateDeduction, out var late);
+                decimal.TryParse(UndertimeDeduction, out var under);
+                decimal.TryParse(OthersDeduction, out var others);
 
                 var rate = SelectedEmployee.DailyRate;
                 var basic = rate * days;
                 var otPay = ot * (rate / 8) * 1.25m;
                 var holPay = hol * (rate / 8) * 2m;
                 var gross = basic + otPay + holPay + allow + bon;
-                var totalDed = sss + pagibig + phil;
+                var totalDed = sss + pagibig + phil + loan + late + under + others;
                 var net = gross - totalDed;
 
                 if (DatabaseHelper.TestConnection())
@@ -227,7 +270,43 @@ namespace PayrollSystem.ViewModels
                     SaveDeduction(conn, payrollId, "SSS", "SSS", sss);
                     SaveDeduction(conn, payrollId, "PAG-IBIG", "PAGIBIG", pagibig);
                     SaveDeduction(conn, payrollId, "PhilHealth", "PhilHealth", phil);
+                    if(loan > 0) SaveDeduction(conn, payrollId, "Loan", "Loan", loan);
+                    if(late > 0) SaveDeduction(conn, payrollId, "Late", "Other", late);
+                    if(under > 0) SaveDeduction(conn, payrollId, "Undertime", "Other", under);
+                    if(others > 0) SaveDeduction(conn, payrollId, "Others", "Other", others);
                 }
+
+                // Always save to demo history (for Reports section)
+                var now = DateTime.Now;
+                DemoDatabase.AddPayrollRecord(new PayrollHistoryRecord
+                {
+                    Id = DemoDatabase.PayrollHistory.Count + 1,
+                    EmployeeName = SelectedEmployee.FullName,
+                    EmpNumber = SelectedEmployee.EmpNumber,
+                    PayrollDate = now,
+                    PayrollDateFormatted = now.ToString("MMM dd, yyyy  hh:mm tt"),
+                    WorkDays = days,
+                    PeriodStart = PeriodStart,
+                    PeriodEnd = PeriodEnd,
+                    OvertimeHours = ot,
+                    HolidayHours = hol,
+                    Allowance = allow,
+                    Bonus = bon,
+                    GrossRaw = gross,
+                    GrossSalary = $"₱{gross:N2}",
+                    DeductionsRaw = totalDed,
+                    Deductions = $"₱{totalDed:N2}",
+                    NetPayRaw = net,
+                    NetPay = $"₱{net:N2}",
+                    Status = "Processed",
+                    Sss = sss,
+                    Pagibig = pagibig,
+                    Philhealth = phil,
+                    Loan = loan,
+                    Late = late,
+                    Undertime = under,
+                    Others = others
+                });
 
                 StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2}";
             }

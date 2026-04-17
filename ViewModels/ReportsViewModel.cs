@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
+using PayrollSystem.ViewModels;
 using MySql.Data.MySqlClient;
 using Microsoft.Win32;
 
@@ -16,12 +19,36 @@ namespace PayrollSystem.ViewModels
         private DateTime _startDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
         private DateTime _endDate = DateTime.Now;
         private string _statusMessage = "";
+        private string _deductionSearchText = "";
+        private EmployeeItem? _selectedDeductionEmployee;
+        private bool _hasDeductionRecords;
+        private decimal _totalSss, _totalPagibig, _totalPhilhealth, _totalAllDeductions;
 
         public DateTime StartDate { get => _startDate; set { SetProperty(ref _startDate, value); LoadData(); } }
         public DateTime EndDate { get => _endDate; set { SetProperty(ref _endDate, value); LoadData(); } }
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
 
+        // Deduction history
+        public string DeductionSearchText
+        {
+            get => _deductionSearchText;
+            set { SetProperty(ref _deductionSearchText, value); FilterDeductionEmployees(); }
+        }
+        public EmployeeItem? SelectedDeductionEmployee
+        {
+            get => _selectedDeductionEmployee;
+            set { SetProperty(ref _selectedDeductionEmployee, value); LoadEmployeeDeductions(); }
+        }
+        public bool HasDeductionRecords { get => _hasDeductionRecords; set => SetProperty(ref _hasDeductionRecords, value); }
+        public decimal TotalSss { get => _totalSss; set => SetProperty(ref _totalSss, value); }
+        public decimal TotalPagibig { get => _totalPagibig; set => SetProperty(ref _totalPagibig, value); }
+        public decimal TotalPhilhealth { get => _totalPhilhealth; set => SetProperty(ref _totalPhilhealth, value); }
+        public decimal TotalAllDeductions { get => _totalAllDeductions; set => SetProperty(ref _totalAllDeductions, value); }
+
         public ObservableCollection<PayrollRecord> PayrollRecords { get; } = new();
+        public ObservableCollection<EmployeeItem> AllEmployees { get; } = new();
+        public ObservableCollection<EmployeeItem> FilteredDeductionEmployees { get; } = new();
+        public ObservableCollection<PayrollRecord> EmployeeDeductionRecords { get; } = new();
 
         public ICommand ExportExcelCommand { get; }
 
@@ -33,6 +60,13 @@ namespace PayrollSystem.ViewModels
         public void LoadData()
         {
             PayrollRecords.Clear();
+
+            // Load employees for deduction search
+            DemoDatabase.Initialize();
+            AllEmployees.Clear();
+            foreach (var emp in DemoDatabase.Employees) AllEmployees.Add(emp);
+            FilterDeductionEmployees();
+
             try
             {
                 if (!DatabaseHelper.TestConnection()) { LoadDemoData(); return; }
@@ -74,10 +108,87 @@ namespace PayrollSystem.ViewModels
         private void LoadDemoData()
         {
             PayrollRecords.Clear();
-            var now = DateTime.Now;
-            PayrollRecords.Add(new PayrollRecord { EmployeeName = "Kenneth Ariel Francisco", EmpNumber = "EMP-0001", PayrollDate = now.ToString("MMM dd, yyyy  hh:mm tt"), GrossSalary = "₱26,400.00", GrossRaw = 26400, Deductions = "₱2,412.00", DeductionsRaw = 2412, NetPay = "₱23,988.00", NetPayRaw = 23988, Status = "Processed" });
-            PayrollRecords.Add(new PayrollRecord { EmployeeName = "Judy Peralta", EmpNumber = "EMP-0002", PayrollDate = now.ToString("MMM dd, yyyy  hh:mm tt"), GrossSalary = "₱33,000.00", GrossRaw = 33000, Deductions = "₱3,037.50", DeductionsRaw = 3037.50m, NetPay = "₱29,962.50", NetPayRaw = 29962.50m, Status = "Processed" });
-            PayrollRecords.Add(new PayrollRecord { EmployeeName = "Alyssa Marie Zamudio", EmpNumber = "EMP-0004", PayrollDate = now.AddDays(-1).ToString("MMM dd, yyyy  hh:mm tt"), GrossSalary = "₱22,000.00", GrossRaw = 22000, Deductions = "₱2,035.00", DeductionsRaw = 2035, NetPay = "₱19,965.00", NetPayRaw = 19965, Status = "Processed" });
+
+            // Pull from DemoDatabase payroll history (real processed records)
+            foreach (var rec in DemoDatabase.PayrollHistory)
+            {
+                if (rec.PayrollDate >= StartDate && rec.PayrollDate <= EndDate.AddDays(1))
+                {
+                    PayrollRecords.Add(new PayrollRecord
+                    {
+                        Id = rec.Id,
+                        EmployeeName = rec.EmployeeName,
+                        EmpNumber = rec.EmpNumber,
+                        PayrollDate = rec.PayrollDateFormatted,
+                        GrossSalary = rec.GrossSalary,
+                        GrossRaw = rec.GrossRaw,
+                        Deductions = rec.Deductions,
+                        DeductionsRaw = rec.DeductionsRaw,
+                        NetPay = rec.NetPay,
+                        NetPayRaw = rec.NetPayRaw,
+                        Status = rec.Status,
+                        Sss = rec.Sss,
+                        Pagibig = rec.Pagibig,
+                        Philhealth = rec.Philhealth
+                    });
+                }
+            }
+
+            if (PayrollRecords.Count == 0)
+                StatusMessage = "No payroll records found. Process payroll first to see records here.";
+            else
+                StatusMessage = "";
+        }
+
+        private void FilterDeductionEmployees()
+        {
+            FilteredDeductionEmployees.Clear();
+            var filtered = string.IsNullOrWhiteSpace(DeductionSearchText)
+                ? AllEmployees
+                : new ObservableCollection<EmployeeItem>(AllEmployees.Where(e =>
+                    e.FullName.Contains(DeductionSearchText, StringComparison.OrdinalIgnoreCase) ||
+                    e.EmpNumber.Contains(DeductionSearchText, StringComparison.OrdinalIgnoreCase)));
+            foreach (var emp in filtered) FilteredDeductionEmployees.Add(emp);
+
+            if (!string.IsNullOrWhiteSpace(DeductionSearchText) && FilteredDeductionEmployees.Count > 0)
+                SelectedDeductionEmployee = FilteredDeductionEmployees[0];
+        }
+
+        private void LoadEmployeeDeductions()
+        {
+            EmployeeDeductionRecords.Clear();
+            TotalSss = 0; TotalPagibig = 0; TotalPhilhealth = 0; TotalAllDeductions = 0;
+
+            if (SelectedDeductionEmployee == null) { HasDeductionRecords = false; return; }
+
+            var empNum = SelectedDeductionEmployee.EmpNumber;
+
+            foreach (var rec in DemoDatabase.PayrollHistory)
+            {
+                if (rec.EmpNumber == empNum)
+                {
+                    EmployeeDeductionRecords.Add(new PayrollRecord
+                    {
+                        PayrollDate = rec.PayrollDateFormatted,
+                        GrossSalary = rec.GrossSalary,
+                        GrossRaw = rec.GrossRaw,
+                        Deductions = rec.Deductions,
+                        DeductionsRaw = rec.DeductionsRaw,
+                        NetPay = rec.NetPay,
+                        NetPayRaw = rec.NetPayRaw,
+                        Sss = rec.Sss,
+                        Pagibig = rec.Pagibig,
+                        Philhealth = rec.Philhealth
+                    });
+
+                    TotalSss += rec.Sss;
+                    TotalPagibig += rec.Pagibig;
+                    TotalPhilhealth += rec.Philhealth;
+                    TotalAllDeductions += rec.DeductionsRaw;
+                }
+            }
+
+            HasDeductionRecords = EmployeeDeductionRecords.Count > 0;
         }
 
         private void ExportToExcel()
@@ -93,9 +204,9 @@ namespace PayrollSystem.ViewModels
                 var saveDialog = new SaveFileDialog
                 {
                     Title = "Export Payroll Report",
-                    Filter = "Excel Files (*.xlsx)|*.xlsx|CSV Files (*.csv)|*.csv",
+                    Filter = "CSV Files (*.csv)|*.csv|Excel XML (*.xlsx)|*.xlsx",
                     FileName = $"Payroll_Report_{DateTime.Now:yyyyMMdd}",
-                    DefaultExt = ".xlsx"
+                    DefaultExt = ".csv"
                 };
 
                 if (saveDialog.ShowDialog() != true) return;
@@ -103,13 +214,9 @@ namespace PayrollSystem.ViewModels
                 var filePath = saveDialog.FileName;
 
                 if (filePath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
-                {
                     ExportAsXlsx(filePath);
-                }
                 else
-                {
                     ExportAsCsv(filePath);
-                }
 
                 StatusMessage = $"✓ Exported successfully: {Path.GetFileName(filePath)}";
             }
@@ -121,13 +228,11 @@ namespace PayrollSystem.ViewModels
 
         private void ExportAsXlsx(string filePath)
         {
-            // Generate Office Open XML Spreadsheet (real .xlsx)
             var sharedStrings = new List<string>();
             int SharedStr(string s) { if (!sharedStrings.Contains(s)) sharedStrings.Add(s); return sharedStrings.IndexOf(s); }
 
             var rows = new StringBuilder();
-            // Header row
-            string[] headers = { "EMP #", "Employee Name", "Date", "Gross Salary", "Deductions", "Net Pay", "Status" };
+            string[] headers = { "EMP #", "Employee Name", "Date", "Gross Salary", "SSS", "PAG-IBIG", "PhilHealth", "Total Deductions", "Net Pay", "Status" };
             rows.Append("<row r=\"1\">");
             for (int i = 0; i < headers.Length; i++)
             {
@@ -136,7 +241,7 @@ namespace PayrollSystem.ViewModels
             }
             rows.Append("</row>");
 
-            decimal totalGross = 0, totalDed = 0, totalNet = 0;
+            decimal totalGross = 0, totalSss = 0, totalPag = 0, totalPhil = 0, totalDed = 0, totalNet = 0;
             int rowNum = 2;
 
             foreach (var rec in PayrollRecords)
@@ -146,38 +251,37 @@ namespace PayrollSystem.ViewModels
                 rows.Append($"<c r=\"B{rowNum}\" t=\"s\"><v>{SharedStr(rec.EmployeeName)}</v></c>");
                 rows.Append($"<c r=\"C{rowNum}\" t=\"s\"><v>{SharedStr(rec.PayrollDate)}</v></c>");
                 rows.Append($"<c r=\"D{rowNum}\"><v>{rec.GrossRaw}</v></c>");
-                rows.Append($"<c r=\"E{rowNum}\"><v>{rec.DeductionsRaw}</v></c>");
-                rows.Append($"<c r=\"F{rowNum}\"><v>{rec.NetPayRaw}</v></c>");
-                rows.Append($"<c r=\"G{rowNum}\" t=\"s\"><v>{SharedStr(rec.Status)}</v></c>");
+                rows.Append($"<c r=\"E{rowNum}\"><v>{rec.Sss}</v></c>");
+                rows.Append($"<c r=\"F{rowNum}\"><v>{rec.Pagibig}</v></c>");
+                rows.Append($"<c r=\"G{rowNum}\"><v>{rec.Philhealth}</v></c>");
+                rows.Append($"<c r=\"H{rowNum}\"><v>{rec.DeductionsRaw}</v></c>");
+                rows.Append($"<c r=\"I{rowNum}\"><v>{rec.NetPayRaw}</v></c>");
+                rows.Append($"<c r=\"J{rowNum}\" t=\"s\"><v>{SharedStr(rec.Status)}</v></c>");
                 rows.Append("</row>");
-                totalGross += rec.GrossRaw;
-                totalDed += rec.DeductionsRaw;
-                totalNet += rec.NetPayRaw;
+                totalGross += rec.GrossRaw; totalSss += rec.Sss; totalPag += rec.Pagibig;
+                totalPhil += rec.Philhealth; totalDed += rec.DeductionsRaw; totalNet += rec.NetPayRaw;
                 rowNum++;
             }
 
-            // Totals row
             rows.Append($"<row r=\"{rowNum}\">");
-            rows.Append($"<c r=\"A{rowNum}\" t=\"s\"><v>{SharedStr("")}</v></c>");
-            rows.Append($"<c r=\"B{rowNum}\" t=\"s\"><v>{SharedStr("")}</v></c>");
             rows.Append($"<c r=\"C{rowNum}\" t=\"s\"><v>{SharedStr("TOTALS")}</v></c>");
             rows.Append($"<c r=\"D{rowNum}\"><v>{totalGross}</v></c>");
-            rows.Append($"<c r=\"E{rowNum}\"><v>{totalDed}</v></c>");
-            rows.Append($"<c r=\"F{rowNum}\"><v>{totalNet}</v></c>");
+            rows.Append($"<c r=\"E{rowNum}\"><v>{totalSss}</v></c>");
+            rows.Append($"<c r=\"F{rowNum}\"><v>{totalPag}</v></c>");
+            rows.Append($"<c r=\"G{rowNum}\"><v>{totalPhil}</v></c>");
+            rows.Append($"<c r=\"H{rowNum}\"><v>{totalDed}</v></c>");
+            rows.Append($"<c r=\"I{rowNum}\"><v>{totalNet}</v></c>");
             rows.Append("</row>");
 
-            // Build shared strings XML
             var ssXml = new StringBuilder();
             ssXml.Append($"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{sharedStrings.Count}\" uniqueCount=\"{sharedStrings.Count}\">");
-            foreach (var s in sharedStrings)
-                ssXml.Append($"<si><t>{System.Security.SecurityElement.Escape(s)}</t></si>");
+            foreach (var s in sharedStrings) ssXml.Append($"<si><t>{System.Security.SecurityElement.Escape(s)}</t></si>");
             ssXml.Append("</sst>");
 
-            // Build sheet XML
             var sheetXml = $@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
 <worksheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">
 <cols><col min=""1"" max=""1"" width=""12""/><col min=""2"" max=""2"" width=""28""/><col min=""3"" max=""3"" width=""22""/>
-<col min=""4"" max=""6"" width=""16""/><col min=""7"" max=""7"" width=""12""/></cols>
+<col min=""4"" max=""9"" width=""14""/><col min=""10"" max=""10"" width=""12""/></cols>
 <sheetData>{rows}</sheetData></worksheet>";
 
             var contentTypes = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
@@ -204,7 +308,6 @@ namespace PayrollSystem.ViewModels
 <workbook xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"">
 <sheets><sheet name=""Payroll Report"" sheetId=""1"" r:id=""rId1""/></sheets></workbook>";
 
-            // Write as ZIP (xlsx is a ZIP)
             if (File.Exists(filePath)) File.Delete(filePath);
             using var zip = System.IO.Compression.ZipFile.Open(filePath, System.IO.Compression.ZipArchiveMode.Create);
             WriteEntry(zip, "[Content_Types].xml", contentTypes);
@@ -226,24 +329,23 @@ namespace PayrollSystem.ViewModels
         private void ExportAsCsv(string filePath)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Payroll Report");
-            sb.AppendLine($"Period: {StartDate:MMM dd, yyyy} to {EndDate:MMM dd, yyyy}");
-            sb.AppendLine($"Generated: {DateTime.Now:MMM dd, yyyy  hh:mm tt}");
+            sb.AppendLine("Payroll Report - Zoey's Billiard House");
+            sb.AppendLine($"Period: {StartDate:MMM dd yyyy} to {EndDate:MMM dd yyyy}");
+            sb.AppendLine($"Generated: {DateTime.Now:MMM dd yyyy  hh:mm tt}");
             sb.AppendLine();
-            sb.AppendLine("EMP #,Employee Name,Date,Gross Salary,Deductions,Net Pay,Status");
+            sb.AppendLine("EMP #,Employee Name,Date,Gross Salary,SSS,PAG-IBIG,PhilHealth,Total Deductions,Net Pay,Status");
 
-            decimal totalGross = 0, totalDed = 0, totalNet = 0;
+            decimal totalGross = 0, totalSss = 0, totalPag = 0, totalPhil = 0, totalDed = 0, totalNet = 0;
 
             foreach (var rec in PayrollRecords)
             {
-                sb.AppendLine($"{rec.EmpNumber},\"{rec.EmployeeName}\",\"{rec.PayrollDate}\",{rec.GrossRaw:N2},{rec.DeductionsRaw:N2},{rec.NetPayRaw:N2},{rec.Status}");
-                totalGross += rec.GrossRaw;
-                totalDed += rec.DeductionsRaw;
-                totalNet += rec.NetPayRaw;
+                sb.AppendLine($"{rec.EmpNumber},\"{rec.EmployeeName}\",\"{rec.PayrollDate}\",{rec.GrossRaw:F2},{rec.Sss:F2},{rec.Pagibig:F2},{rec.Philhealth:F2},{rec.DeductionsRaw:F2},{rec.NetPayRaw:F2},{rec.Status}");
+                totalGross += rec.GrossRaw; totalSss += rec.Sss; totalPag += rec.Pagibig;
+                totalPhil += rec.Philhealth; totalDed += rec.DeductionsRaw; totalNet += rec.NetPayRaw;
             }
 
             sb.AppendLine();
-            sb.AppendLine($",,TOTALS,{totalGross:N2},{totalDed:N2},{totalNet:N2},");
+            sb.AppendLine($",,TOTALS,{totalGross:F2},{totalSss:F2},{totalPag:F2},{totalPhil:F2},{totalDed:F2},{totalNet:F2},");
 
             File.WriteAllText(filePath, sb.ToString());
         }
@@ -262,5 +364,8 @@ namespace PayrollSystem.ViewModels
         public string NetPay { get; set; } = "";
         public decimal NetPayRaw { get; set; }
         public string Status { get; set; } = "";
+        public decimal Sss { get; set; }
+        public decimal Pagibig { get; set; }
+        public decimal Philhealth { get; set; }
     }
 }

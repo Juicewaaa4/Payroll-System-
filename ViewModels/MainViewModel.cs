@@ -44,7 +44,9 @@ namespace PayrollSystem.ViewModels
         public ICommand NavigateEmployeesCommand { get; }
         public ICommand NavigatePayrollCommand { get; }
         public ICommand NavigatePayslipCommand { get; }
+        public ICommand NavigateBatchPrintCommand { get; }
         public ICommand NavigateReportsCommand { get; }
+        public ICommand NavigateSettingsCommand { get; }
         public ICommand LogoutCommand { get; }
 
         // ViewModels
@@ -52,7 +54,9 @@ namespace PayrollSystem.ViewModels
         private readonly EmployeeViewModel _employeeViewModel;
         private readonly PayrollViewModel _payrollViewModel;
         private readonly PayslipViewModel _payslipViewModel;
+        private readonly BatchPrintViewModel _batchPrintViewModel;
         private readonly ReportsViewModel _reportsViewModel;
+        private readonly SettingsViewModel _settingsViewModel;
 
         public MainViewModel()
         {
@@ -60,7 +64,9 @@ namespace PayrollSystem.ViewModels
             _employeeViewModel = new EmployeeViewModel();
             _payrollViewModel = new PayrollViewModel();
             _payslipViewModel = new PayslipViewModel();
+            _batchPrintViewModel = new BatchPrintViewModel();
             _reportsViewModel = new ReportsViewModel();
+            _settingsViewModel = new SettingsViewModel();
 
             CurrentView = _dashboardViewModel;
 
@@ -68,7 +74,9 @@ namespace PayrollSystem.ViewModels
             NavigateEmployeesCommand = new RelayCommand(_ => NavigateTo("Employees"));
             NavigatePayrollCommand = new RelayCommand(_ => NavigateTo("Payroll"));
             NavigatePayslipCommand = new RelayCommand(_ => NavigateTo("Payslip"));
+            NavigateBatchPrintCommand = new RelayCommand(_ => NavigateTo("BatchPrint"));
             NavigateReportsCommand = new RelayCommand(_ => NavigateTo("Reports"));
+            NavigateSettingsCommand = new RelayCommand(_ => NavigateTo("Settings"));
             LogoutCommand = new RelayCommand(_ => Logout());
         }
 
@@ -90,7 +98,9 @@ namespace PayrollSystem.ViewModels
                 "Employees" => _employeeViewModel,
                 "Payroll" => _payrollViewModel,
                 "Payslip" => _payslipViewModel,
+                "BatchPrint" => _batchPrintViewModel,
                 "Reports" => _reportsViewModel,
+                "Settings" => _settingsViewModel,
                 _ => _dashboardViewModel
             };
 
@@ -109,8 +119,14 @@ namespace PayrollSystem.ViewModels
                     case "Payslip":
                         Application.Current.Dispatcher.Invoke(() => _payslipViewModel.LoadEmployees());
                         break;
+                    case "BatchPrint":
+                        Application.Current.Dispatcher.Invoke(() => _batchPrintViewModel.LoadData());
+                        break;
                     case "Reports":
                         Application.Current.Dispatcher.Invoke(() => _reportsViewModel.LoadData());
+                        break;
+                    case "Settings":
+                        Application.Current.Dispatcher.Invoke(() => _settingsViewModel.LoadData());
                         break;
                 }
             });

@@ -56,4 +56,41 @@ namespace PayrollSystem.Helpers
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Evaluates if the bound value equals the converter parameter.
+    /// Used for RadioButton group binding.
+    /// </summary>
+    public class EqualsConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value?.ToString() == parameter?.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b && b)
+                return int.Parse(parameter.ToString() ?? "0");
+            return Binding.DoNothing;
+        }
+    }
+
+    /// <summary>
+    /// Converts an integer value matching the parameter to Visible, else Collapsed.
+    /// </summary>
+    public class IntToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value?.ToString() == parameter?.ToString())
+                return Visibility.Visible;
+            return Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

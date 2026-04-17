@@ -102,8 +102,38 @@
                         </Grid>
 
                         <!-- Process Button -->
-                        <Button Content="💵  Process Payroll" Style="{StaticResource PrimaryButton}"
-                                Command="{Binding ProcessPayrollCommand}" Height="42" FontSize="13"/>
+                        <Button HorizontalAlignment="Right" Cursor="Hand"
+                                Command="{Binding ProcessPayrollCommand}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="procBg" Background="{StaticResource PrimaryBrush}"
+                                            CornerRadius="8" Padding="24,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="💵" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Process Payroll" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="White" VerticalAlignment="Center"
+                                                       FontFamily="{StaticResource PrimaryFont}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="procBg" Property="Background">
+                                                <Setter.Value>
+                                                    <SolidColorBrush Color="{StaticResource HoverGreen}"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="procBg" Property="Background">
+                                                <Setter.Value>
+                                                    <SolidColorBrush Color="{StaticResource PrimaryGreenDark}"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
 
                         <!-- Status Message -->
                         <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource PrimaryBrush}"
@@ -111,93 +141,187 @@
                     </StackPanel>
                 </Border>
 
-                <!-- ═══ RIGHT: Computation Panel ═══ -->
-                <Border Grid.Column="2" Style="{StaticResource Card}">
+                <!-- ═══ RIGHT: Computation Panel (Payslip Twin) ═══ -->
+                <Border Grid.Column="2" Background="White" CornerRadius="4" BorderBrush="#B0B0B0" BorderThickness="1" Padding="20">
                     <StackPanel>
                         <TextBlock Text="Salary Computation" Style="{StaticResource SectionTitle}" Margin="0,0,0,16"/>
 
-                        <!-- Earnings -->
-                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,14">
-                            <StackPanel>
-                                <TextBlock Text="EARNINGS" FontSize="11" FontWeight="Bold"
-                                           Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,10"/>
-                                <Grid Margin="0,0,0,5">
-                                    <TextBlock Text="Basic Salary" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                    <TextBlock Text="{Binding BasicSalary}" HorizontalAlignment="Right" FontSize="13" FontWeight="SemiBold"/>
-                                </Grid>
-                                <Grid Margin="0,0,0,5">
-                                    <TextBlock Text="Overtime Pay" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                    <TextBlock Text="{Binding OvertimePay}" HorizontalAlignment="Right" FontSize="13"/>
-                                </Grid>
+                        <!-- Dual Tabular Grid to match Payslip -->
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- EARNINGS ROW -->
+                            <Border Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" Margin="0,0,0,15">
                                 <Grid>
-                                    <TextBlock Text="Holiday Pay" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                    <TextBlock Text="{Binding HolidayPay}" HorizontalAlignment="Right" FontSize="13"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    
+                                    <Border Grid.Row="0" Background="#1E7B44" Padding="10,6" BorderBrush="DarkGray" BorderThickness="0,0,0,1">
+                                        <TextBlock Text="Earnings" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                                    </Border>
+                                    
+                                    <Border Grid.Row="1" Background="#E8E8E8" BorderBrush="DarkGray" BorderThickness="0,0,0,1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="100"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Description" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                            <TextBlock Grid.Column="1" Text="Amount" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                        </Grid>
+                                    </Border>
 
-                        <!-- Gross -->
-                        <Grid Margin="0,0,0,14">
-                            <TextBlock Text="Gross Salary" FontSize="14" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding GrossSalary}" HorizontalAlignment="Right" FontSize="16"
-                                       FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                    <StackPanel Grid.Row="2">
+                                        <StackPanel.Resources>
+                                            <Style TargetType="Grid">
+                                                <Setter Property="Margin" Value="0"/>
+                                            </Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Padding" Value="5,6"/>
+                                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                            </Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="LightGray"/>
+                                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            </Style>
+                                        </StackPanel.Resources>
+
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Basic Salary"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding BasicSalary}" TextAlignment="Right"/>
+                                        </Grid></Border>
+                                        
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Overtime Pay"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding OvertimePay}" TextAlignment="Right"/>
+                                        </Grid></Border>
+
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Holiday Pay"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding HolidayPay}" TextAlignment="Right"/>
+                                        </Grid></Border>
+                                        
+                                        <Border Background="#E8E8E8" BorderThickness="0" Margin="0,10,0,0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="Gross Earnings" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding GrossSalary}" FontWeight="Bold" TextAlignment="Right" Foreground="#1E7B44"/>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- DEDUCTIONS ROW -->
+                            <Border Grid.Row="1" BorderBrush="DarkGray" BorderThickness="1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    
+                                    <Border Grid.Row="0" Background="#333333" Padding="10,6" BorderBrush="DarkGray" BorderThickness="0,0,0,1">
+                                        <TextBlock Text="Deductions" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                                    </Border>
+                                    
+                                    <Border Grid.Row="1" Background="#E8E8E8" BorderBrush="DarkGray" BorderThickness="0,0,0,1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="100"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Description (Editable 👇)" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                            <TextBlock Grid.Column="1" Text="Amount" FontWeight="SemiBold" TextAlignment="Center" Padding="5"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <StackPanel Grid.Row="2">
+                                        <StackPanel.Resources>
+                                            <Style TargetType="Grid">
+                                                <Setter Property="Margin" Value="0"/>
+                                            </Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Padding" Value="5,6"/>
+                                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                            </Style>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="Padding" Value="5,6"/>
+                                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                                <Setter Property="Background" Value="#FFF8E1"/> <!-- Light yellow to denote editable -->
+                                                <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Setter Property="TextAlignment" Value="Right"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                <Setter Property="Foreground" Value="#D32F2F"/>
+                                                <Setter Property="Margin" Value="2"/>
+                                            </Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="LightGray"/>
+                                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            </Style>
+                                        </StackPanel.Resources>
+
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="SSS Contribution"/>
+                                            <TextBox Grid.Column="1" Text="{Binding SssDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid></Border>
+                                        
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="PhilHealth"/>
+                                            <TextBox Grid.Column="1" Text="{Binding PhilhealthDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid></Border>
+
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Pag-IBIG"/>
+                                            <TextBox Grid.Column="1" Text="{Binding PagibigDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid></Border>
+
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Loan"/>
+                                            <TextBox Grid.Column="1" Text="{Binding LoanDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid></Border>
+
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Late"/>
+                                            <TextBox Grid.Column="1" Text="{Binding LateDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid></Border>
+
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Undertime"/>
+                                            <TextBox Grid.Column="1" Text="{Binding UndertimeDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid></Border>
+
+                                        <Border><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Others"/>
+                                            <TextBox Grid.Column="1" Text="{Binding OthersDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid></Border>
+                                        
+                                        <Border Background="#E8E8E8" BorderThickness="0" Margin="0,10,0,0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="Total Deductions" FontWeight="Bold"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding TotalDeductions}" FontWeight="Bold" TextAlignment="Right" Foreground="#D32F2F"/>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
                         </Grid>
 
-                        <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,0,0,14"/>
+                        <Border Height="1" Background="DarkGray" Margin="0,20,0,10"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                            <TextBlock Text="Net Pay (Gross – Deductions) = " FontWeight="Bold" FontSize="15"/>
+                            <TextBlock Text="{Binding NetPay}" FontWeight="Bold" FontSize="15" Foreground="#1E7B44"/>
+                        </StackPanel>
+                        <Border Height="1" Background="DarkGray" Margin="0,0,0,0"/>
 
-                        <!-- Editable Deductions -->
-                        <Border Background="#FFF3E0" CornerRadius="8" Padding="16" Margin="0,0,0,14">
-                            <StackPanel>
-                                <TextBlock Text="DEDUCTIONS (editable)" FontSize="11" FontWeight="Bold"
-                                           Foreground="#E65100" Margin="0,0,0,10"/>
-                                <Grid Margin="0,0,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="110"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="SSS" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="1" Style="{StaticResource ModernTextBox}" FontSize="12"
-                                             Text="{Binding SssDeduction, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                                </Grid>
-                                <Grid Margin="0,0,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="110"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="PAG-IBIG" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="1" Style="{StaticResource ModernTextBox}" FontSize="12"
-                                             Text="{Binding PagibigDeduction, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                                </Grid>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="110"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="PhilHealth" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="1" Style="{StaticResource ModernTextBox}" FontSize="12"
-                                             Text="{Binding PhilhealthDeduction, UpdateSourceTrigger=PropertyChanged}" Padding="8,6"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Total Deductions -->
-                        <Grid Margin="0,0,0,14">
-                            <TextBlock Text="Total Deductions" FontSize="14" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding TotalDeductions}" HorizontalAlignment="Right" FontSize="14"
-                                       FontWeight="SemiBold" Foreground="#E53935"/>
-                        </Grid>
-
-                        <Border Height="2" Background="{StaticResource PrimaryBrush}" Margin="0,0,0,14"/>
-
-                        <!-- NET PAY -->
-                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="18">
-                            <Grid>
-                                <TextBlock Text="NET PAY" FontSize="15" FontWeight="Bold"
-                                           Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding NetPay}" HorizontalAlignment="Right" FontSize="22"
-                                           FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
-                            </Grid>
-                        </Border>
                     </StackPanel>
                 </Border>
             </Grid>

@@ -18,7 +18,7 @@
                                     CornerRadius="8" Padding="14,8">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="📊" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Export Excel" FontSize="12" FontWeight="SemiBold"
+                                    <TextBlock Text="Export" FontSize="12" FontWeight="SemiBold"
                                                Foreground="White" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
@@ -35,7 +35,7 @@
                     </Button.Template>
                 </Button>
             </DockPanel>
-            <TextBlock Text="View and filter payroll transaction records" Foreground="{StaticResource TextSecondaryBrush}"
+            <TextBlock Text="View payroll records and employee deduction history" Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="13" Margin="0,0,0,24"/>
 
             <!-- Status Message -->
@@ -57,8 +57,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- Transaction Table -->
-            <Border Style="{StaticResource Card}" Padding="0">
+            <!-- Payroll Records Table -->
+            <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="Payroll Records" Style="{StaticResource SectionTitle}" Margin="24,20,24,16"/>
 
@@ -67,26 +67,128 @@
                               ColumnHeaderStyle="{StaticResource ModernDataGridColumnHeader}"
                               CellStyle="{StaticResource ModernDataGridCell}"
                               RowStyle="{StaticResource ModernDataGridRow}"
-                              MaxHeight="500">
+                              MaxHeight="350">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="EMP #" Binding="{Binding EmpNumber}" Width="90"/>
+                            <DataGridTextColumn Header="EMP #" Binding="{Binding EmpNumber}" Width="85"/>
                             <DataGridTextColumn Header="Employee" Binding="{Binding EmployeeName}" Width="*"/>
-                            <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="170"/>
-                            <DataGridTextColumn Header="Gross Salary" Binding="{Binding GrossSalary}" Width="120"/>
-                            <DataGridTextColumn Header="Deductions" Binding="{Binding Deductions}" Width="110"/>
-                            <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="120"/>
-                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90"/>
+                            <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="155"/>
+                            <DataGridTextColumn Header="Gross" Binding="{Binding GrossSalary}" Width="95"/>
+                            <DataGridTextColumn Header="SSS" Binding="{Binding Sss, StringFormat=₱{0:N2}}" Width="75"/>
+                            <DataGridTextColumn Header="PAG-IBIG" Binding="{Binding Pagibig, StringFormat=₱{0:N2}}" Width="78"/>
+                            <DataGridTextColumn Header="PhilHealth" Binding="{Binding Philhealth, StringFormat=₱{0:N2}}" Width="82"/>
+                            <DataGridTextColumn Header="Total Ded." Binding="{Binding Deductions}" Width="90"/>
+                            <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="95"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="75"/>
                         </DataGrid.Columns>
                     </DataGrid>
+
+                    <!-- Footer count -->
+                    <TextBlock Margin="24,10,24,16" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                        <Run Text="Showing "/>
+                        <Run Text="{Binding PayrollRecords.Count, Mode=OneWay}"/>
+                        <Run Text=" record(s)"/>
+                    </TextBlock>
                 </StackPanel>
             </Border>
 
-            <!-- Footer -->
-            <TextBlock Margin="4,10,0,0" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
-                <Run Text="Showing "/>
-                <Run Text="{Binding PayrollRecords.Count, Mode=OneWay}"/>
-                <Run Text=" record(s)"/>
-            </TextBlock>
+            <!-- ═══ DEDUCTION HISTORY SECTION ═══ -->
+            <Border Style="{StaticResource Card}" Padding="0">
+                <StackPanel>
+                    <Border Background="{StaticResource SurfaceBrush}" Padding="24,16" CornerRadius="12,12,0,0">
+                        <DockPanel>
+                            <TextBlock Text="Employee Deduction History" Style="{StaticResource SectionTitle}"
+                                       DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Search bar -->
+                    <Border Padding="24,12,24,0">
+                        <StackPanel>
+                            <TextBlock Text="SEARCH EMPLOYEE" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Style="{StaticResource ModernTextBox}" Margin="0,0,0,6"
+                                     Text="{Binding DeductionSearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                            <ComboBox ItemsSource="{Binding FilteredDeductionEmployees}"
+                                      SelectedItem="{Binding SelectedDeductionEmployee}"
+                                      DisplayMemberPath="FullName"
+                                      Style="{StaticResource ModernComboBox}" Margin="0,0,0,12"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Selected Employee Deduction Summary -->
+                    <Border Padding="24,0,24,20"
+                            Visibility="{Binding SelectedDeductionEmployee, Converter={StaticResource NullToVisConverter}}">
+                        <StackPanel>
+                            <!-- Employee info header -->
+                            <Border Background="#E8F5E9" CornerRadius="8" Padding="16,10" Margin="0,0,0,12">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Left">
+                                        <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="#1B5E20">
+                                            <Run Text="{Binding SelectedDeductionEmployee.FullName}"/>
+                                            <Run Text=" (" Foreground="#757575"/>
+                                            <Run Text="{Binding SelectedDeductionEmployee.EmpNumber}" Foreground="#757575"/>
+                                            <Run Text=")" Foreground="#757575"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,2,0,0">
+                                            <Run Text="{Binding SelectedDeductionEmployee.Position}"/>
+                                            <Run Text=" — Daily Rate: ₱"/>
+                                            <Run Text="{Binding SelectedDeductionEmployee.DailyRate, StringFormat=N2}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               FontSize="12" Foreground="#757575">
+                                        <Run Text="{Binding EmployeeDeductionRecords.Count, Mode=OneWay}"/>
+                                        <Run Text=" payroll(s)"/>
+                                    </TextBlock>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Deduction records table -->
+                            <DataGrid ItemsSource="{Binding EmployeeDeductionRecords}"
+                                      Style="{StaticResource ModernDataGrid}"
+                                      ColumnHeaderStyle="{StaticResource ModernDataGridColumnHeader}"
+                                      CellStyle="{StaticResource ModernDataGridCell}"
+                                      RowStyle="{StaticResource ModernDataGridRow}"
+                                      MaxHeight="300">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="155"/>
+                                    <DataGridTextColumn Header="Gross" Binding="{Binding GrossSalary}" Width="100"/>
+                                    <DataGridTextColumn Header="SSS" Binding="{Binding Sss, StringFormat=₱{0:N2}}" Width="85"/>
+                                    <DataGridTextColumn Header="PAG-IBIG" Binding="{Binding Pagibig, StringFormat=₱{0:N2}}" Width="85"/>
+                                    <DataGridTextColumn Header="PhilHealth" Binding="{Binding Philhealth, StringFormat=₱{0:N2}}" Width="90"/>
+                                    <DataGridTextColumn Header="Total Ded." Binding="{Binding Deductions}" Width="95"/>
+                                    <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <!-- Totals row -->
+                            <Border Background="#FAFAFA" CornerRadius="0,0,8,8" Padding="16,10" Margin="0,4,0,0"
+                                    Visibility="{Binding HasDeductionRecords, Converter={StaticResource BoolToVisConverter}}">
+                                <Grid>
+                                    <TextBlock Text="TOTAL DEDUCTIONS PAID:" FontSize="12" FontWeight="Bold" Foreground="#424242"/>
+                                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,16,0">
+                                            <Run Text="SSS: ₱"/>
+                                            <Run Text="{Binding TotalSss, StringFormat=N2}"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,16,0">
+                                            <Run Text="PAG-IBIG: ₱"/>
+                                            <Run Text="{Binding TotalPagibig, StringFormat=N2}"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,16,0">
+                                            <Run Text="PhilHealth: ₱"/>
+                                            <Run Text="{Binding TotalPhilhealth, StringFormat=N2}"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="12" FontWeight="Bold" Foreground="#E53935">
+                                            <Run Text="Total: ₱"/>
+                                            <Run Text="{Binding TotalAllDeductions, StringFormat=N2}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

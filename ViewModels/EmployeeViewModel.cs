@@ -62,17 +62,17 @@ namespace PayrollSystem.ViewModels
             {
                 if (!DatabaseHelper.TestConnection())
                 {
-                    if (DemoDatabase.Employees == null) DemoDatabase.Initialize();
+                    DemoDatabase.Initialize();
                     
                     Employees.Clear();
                     foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
                     
-                    if (Departments.Count == 0)
+                    Departments.Clear();
+                    foreach (var dept in DemoDatabase.Departments)
                     {
-                        Departments.Add("ADMIN");
-                        Departments.Add("Zoey's Eatery");
-                        Departments.Add("Billiard Tenant");
+                        Departments.Add(dept.Name);
                     }
+                    
                     FilterEmployees();
                     return;
                 }
@@ -127,9 +127,11 @@ namespace PayrollSystem.ViewModels
 
         private void LoadDemoData()
         {
-            Departments.Add("ADMIN");
-            Departments.Add("Zoey's Eatery");
-            Departments.Add("Billiard Tenant");
+            Departments.Clear();
+            foreach (var dept in DemoDatabase.Departments)
+            {
+                Departments.Add(dept.Name);
+            }
 
             var demoEmployees = new[]
             {
@@ -255,7 +257,7 @@ namespace PayrollSystem.ViewModels
                     // Demo mode: update in-memory
                     if (IsEditing && SelectedEmployee != null)
                     {
-                        // Update directly in the Employees collection
+                        // Update directly in the local Employees collection
                         var emp = Employees.FirstOrDefault(e => e.Id == SelectedEmployee.Id);
                         if (emp != null)
                         {
@@ -266,6 +268,19 @@ namespace PayrollSystem.ViewModels
                             emp.DailyRate = rate;
                             emp.DailyRateFormatted = $"₱{rate:N2}";
                             emp.Department = FormDepartment;
+                        }
+
+                        // Also update in DemoDatabase for cross-section persistence
+                        var demoEmp = DemoDatabase.Employees.FirstOrDefault(e => e.Id == SelectedEmployee.Id);
+                        if (demoEmp != null && demoEmp != emp)
+                        {
+                            demoEmp.FirstName = FormFirstName;
+                            demoEmp.LastName = FormLastName;
+                            demoEmp.FullName = $"{FormFirstName} {FormLastName}";
+                            demoEmp.Position = FormPosition;
+                            demoEmp.DailyRate = rate;
+                            demoEmp.DailyRateFormatted = $"₱{rate:N2}";
+                            demoEmp.Department = FormDepartment;
                         }
                     }
                     else
@@ -292,6 +307,12 @@ namespace PayrollSystem.ViewModels
 
                     IsFormVisible = false;
                     FormError = "";
+                    
+                    // Auto-add new department to the list if it doesn't exist
+                    if (!string.IsNullOrWhiteSpace(FormDepartment) && !Departments.Contains(FormDepartment))
+                        Departments.Add(FormDepartment);
+                    
+                    DemoDatabase.SaveChanges(); // Persist offline data permanently!
                     FilterEmployees();
                 }
             }
@@ -304,22 +325,34 @@ namespace PayrollSystem.ViewModels
         private void DeleteEmployee(EmployeeItem? emp)
         {
             if (emp == null) return;
-            try
+
+            var result = System.Windows.MessageBox.Show(
+                $"Are you sure you want to delete {emp.FullName}?",
+                "Confirm Delete",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+
+            if (result == System.Windows.MessageBoxResult.Yes)
             {
                 if (DatabaseHelper.TestConnection())
                 {
                     using var conn = DatabaseHelper.GetConnection();
                     conn.Open();
-                    using var cmd = new MySqlCommand("DELETE FROM employees WHERE id = @id", conn);
+                    using var cmd = new MySqlCommand("UPDATE employees SET is_active=0 WHERE id=@id", conn);
                     cmd.Parameters.AddWithValue("@id", emp.Id);
                     cmd.ExecuteNonQuery();
+                    LoadEmployees();
                 }
-                Employees.Remove(emp);
-                FilterEmployees();
-            }
-            catch (Exception ex)
-            {
-                FormError = $"Cannot delete: {ex.Message}";
+                else
+                {
+                    // Demo mode: update in-memory and save offline
+                    Employees.Remove(emp);
+                    var demoEmp = DemoDatabase.Employees.FirstOrDefault(e => e.Id == emp.Id);
+                    if (demoEmp != null) DemoDatabase.Employees.Remove(demoEmp);
+                    
+                    DemoDatabase.SaveChanges(); // Persist offline delete
+                    FilterEmployees();
+                }
             }
         }
     }
