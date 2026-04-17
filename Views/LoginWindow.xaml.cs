@@ -181,7 +181,14 @@ namespace PayrollSystem.Views
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            Application.Current.Shutdown();
+            var result = MessageBox.Show("Are you sure you want to exit the application?", 
+                                         "Confirm Exit", 
+                                         MessageBoxButton.YesNo, 
+                                         MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                Application.Current.Shutdown();
+            }
         }
     }
 }
