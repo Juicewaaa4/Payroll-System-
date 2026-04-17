@@ -24,6 +24,12 @@ namespace PayrollSystem.ViewModels
         private string _formHireDate = DateTime.Now.ToString("yyyy-MM-dd");
         private string _formError = "";
 
+        private int _currentPage = 1;
+        private int _totalPages = 1;
+        private int _pageSize = 20;
+        private string _sortColumn = "Full Name";
+        private bool _sortAscending = true;
+
         public string SearchText { get => _searchText; set { SetProperty(ref _searchText, value); FilterEmployees(); } }
         public EmployeeItem? SelectedEmployee { get => _selectedEmployee; set => SetProperty(ref _selectedEmployee, value); }
         public bool IsFormVisible { get => _isFormVisible; set => SetProperty(ref _isFormVisible, value); }
@@ -37,6 +43,10 @@ namespace PayrollSystem.ViewModels
         public string FormHireDate { get => _formHireDate; set => SetProperty(ref _formHireDate, value); }
         public string FormError { get => _formError; set => SetProperty(ref _formError, value); }
 
+        public int CurrentPage { get => _currentPage; set { SetProperty(ref _currentPage, value); FilterEmployees(); } }
+        public int TotalPages { get => _totalPages; set => SetProperty(ref _totalPages, value); }
+        public int PageSize { get => _pageSize; set { SetProperty(ref _pageSize, value); CurrentPage = 1; FilterEmployees(); } }
+
         public ObservableCollection<EmployeeItem> Employees { get; } = new();
         public ObservableCollection<EmployeeItem> FilteredEmployees { get; } = new();
         public ObservableCollection<string> Departments { get; } = new();
@@ -47,6 +57,19 @@ namespace PayrollSystem.ViewModels
         public ICommand SaveEmployeeCommand { get; }
         public ICommand CancelFormCommand { get; }
 
+        public ICommand NextPageCommand { get; }
+        public ICommand PreviousPageCommand { get; }
+        public ICommand SortCommand { get; }
+
+        public void SortData(string column)
+        {
+            if (_sortColumn == column) _sortAscending = !_sortAscending;
+            else { _sortColumn = column; _sortAscending = true; }
+            _currentPage = 1;
+            OnPropertyChanged(nameof(CurrentPage));
+            FilterEmployees();
+        }
+
         public EmployeeViewModel()
         {
             AddEmployeeCommand = new RelayCommand(_ => ShowAddForm());
@@ -54,6 +77,10 @@ namespace PayrollSystem.ViewModels
             DeleteEmployeeCommand = new RelayCommand(emp => DeleteEmployee(emp as EmployeeItem));
             SaveEmployeeCommand = new RelayCommand(_ => SaveEmployee());
             CancelFormCommand = new RelayCommand(_ => { IsFormVisible = false; FormError = ""; });
+
+            NextPageCommand = new RelayCommand(_ => { if (CurrentPage < TotalPages) CurrentPage++; });
+            PreviousPageCommand = new RelayCommand(_ => { if (CurrentPage > 1) CurrentPage--; });
+            SortCommand = new RelayCommand(p => SortData(p?.ToString() ?? "Full Name"));
         }
 
         public void LoadEmployees()
@@ -165,16 +192,50 @@ namespace PayrollSystem.ViewModels
 
         private void FilterEmployees()
         {
-            FilteredEmployees.Clear();
-            var filtered = string.IsNullOrWhiteSpace(SearchText)
-                ? Employees
-                : new ObservableCollection<EmployeeItem>(Employees.Where(e =>
+            if (Employees == null) return;
+            
+            IEnumerable<EmployeeItem> query = Employees;
+
+            if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                query = query.Where(e =>
                     e.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                     e.Position.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                     e.EmpNumber.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                    e.Department.Contains(SearchText, StringComparison.OrdinalIgnoreCase)));
+                    e.Department.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            }
 
-            foreach (var emp in filtered) FilteredEmployees.Add(emp);
+            switch (_sortColumn)
+            {
+                case "EMP #":
+                    query = _sortAscending ? query.OrderBy(x => x.EmpNumber) : query.OrderByDescending(x => x.EmpNumber);
+                    break;
+                case "Position":
+                    query = _sortAscending ? query.OrderBy(x => x.Position) : query.OrderByDescending(x => x.Position);
+                    break;
+                case "Department":
+                    query = _sortAscending ? query.OrderBy(x => x.Department) : query.OrderByDescending(x => x.Department);
+                    break;
+                case "Daily Rate":
+                    query = _sortAscending ? query.OrderBy(x => x.DailyRate) : query.OrderByDescending(x => x.DailyRate);
+                    break;
+                case "Status":
+                    query = _sortAscending ? query.OrderBy(x => x.Status) : query.OrderByDescending(x => x.Status);
+                    break;
+                case "Full Name":
+                default:
+                    query = _sortAscending ? query.OrderBy(x => x.LastName).ThenBy(x => x.FirstName) : query.OrderByDescending(x => x.LastName).ThenByDescending(x => x.FirstName);
+                    break;
+            }
+
+            TotalPages = Math.Max(1, (int)Math.Ceiling(query.Count() / (double)PageSize));
+            if (_currentPage > TotalPages) { _currentPage = TotalPages; OnPropertyChanged(nameof(CurrentPage)); }
+            if (_currentPage < 1) { _currentPage = 1; OnPropertyChanged(nameof(CurrentPage)); }
+
+            var paged = query.Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
+
+            FilteredEmployees.Clear();
+            foreach (var emp in paged) FilteredEmployees.Add(emp);
         }
 
         private void ShowAddForm()

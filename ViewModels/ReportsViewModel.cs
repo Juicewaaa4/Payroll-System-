@@ -24,6 +24,14 @@ namespace PayrollSystem.ViewModels
         private bool _hasDeductionRecords;
         private decimal _totalSss, _totalPagibig, _totalPhilhealth, _totalAllDeductions;
 
+        private List<PayrollRecord> _allPayrollRecords = new();
+        private int _currentPage = 1;
+        private int _totalPages = 1;
+        private int _pageSize = 20;
+
+        private string _sortColumn = "Date";
+        private bool _sortAscending = false;
+
         public DateTime StartDate { get => _startDate; set { SetProperty(ref _startDate, value); LoadData(); } }
         public DateTime EndDate { get => _endDate; set { SetProperty(ref _endDate, value); LoadData(); } }
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
@@ -50,6 +58,10 @@ namespace PayrollSystem.ViewModels
         public decimal TotalUndertime { get => _totalUndertime; set => SetProperty(ref _totalUndertime, value); }
         public decimal TotalOthers { get => _totalOthers; set => SetProperty(ref _totalOthers, value); }
 
+        public int CurrentPage { get => _currentPage; set { SetProperty(ref _currentPage, value); UpdatePagedData(); } }
+        public int TotalPages { get => _totalPages; set => SetProperty(ref _totalPages, value); }
+        public int PageSize { get => _pageSize; set { SetProperty(ref _pageSize, value); CurrentPage = 1; UpdatePagedData(); } }
+
         public ObservableCollection<PayrollRecord> PayrollRecords { get; } = new();
         public ObservableCollection<EmployeeItem> AllEmployees { get; } = new();
         public ObservableCollection<EmployeeItem> FilteredDeductionEmployees { get; } = new();
@@ -57,16 +69,22 @@ namespace PayrollSystem.ViewModels
 
         public ICommand ExportExcelCommand { get; }
         public ICommand ExportDeductionsExcelCommand { get; }
+        public ICommand NextPageCommand { get; }
+        public ICommand PreviousPageCommand { get; }
+        public ICommand SortCommand { get; }
 
         public ReportsViewModel()
         {
             ExportExcelCommand = new RelayCommand(_ => ExportToExcel());
             ExportDeductionsExcelCommand = new RelayCommand(_ => ExportDeductionsToExcel());
+            NextPageCommand = new RelayCommand(_ => { if (CurrentPage < TotalPages) CurrentPage++; });
+            PreviousPageCommand = new RelayCommand(_ => { if (CurrentPage > 1) CurrentPage--; });
+            SortCommand = new RelayCommand(p => SortData(p?.ToString() ?? "Date"));
         }
 
         public void LoadData()
         {
-            PayrollRecords.Clear();
+            _allPayrollRecords.Clear();
 
             // Load employees for deduction search
             DemoDatabase.Initialize();
@@ -91,7 +109,7 @@ namespace PayrollSystem.ViewModels
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    PayrollRecords.Add(new PayrollRecord
+                    _allPayrollRecords.Add(new PayrollRecord
                     {
                         Id = reader.GetInt32("id"),
                         EmployeeName = reader.GetString("employee_name"),
@@ -107,21 +125,22 @@ namespace PayrollSystem.ViewModels
                     });
                 }
 
-                if (PayrollRecords.Count == 0) LoadDemoData();
+                if (_allPayrollRecords.Count == 0) LoadDemoData();
+                else UpdatePagedData();
             }
             catch { LoadDemoData(); }
         }
 
         private void LoadDemoData()
         {
-            PayrollRecords.Clear();
+            _allPayrollRecords.Clear();
 
             // Pull from DemoDatabase payroll history (real processed records)
             foreach (var rec in DemoDatabase.PayrollHistory)
             {
                 if (rec.PayrollDate >= StartDate && rec.PayrollDate <= EndDate.AddDays(1))
                 {
-                    PayrollRecords.Add(new PayrollRecord
+                    _allPayrollRecords.Add(new PayrollRecord
                     {
                         Id = rec.Id,
                         EmployeeName = rec.EmployeeName,
@@ -141,10 +160,60 @@ namespace PayrollSystem.ViewModels
                 }
             }
 
-            if (PayrollRecords.Count == 0)
+            if (_allPayrollRecords.Count == 0)
                 StatusMessage = "No payroll records found. Process payroll first to see records here.";
             else
                 StatusMessage = "";
+
+            UpdatePagedData();
+        }
+
+        public void SortData(string column)
+        {
+            if (_sortColumn == column) _sortAscending = !_sortAscending;
+            else { _sortColumn = column; _sortAscending = false; }
+            _currentPage = 1;
+            OnPropertyChanged(nameof(CurrentPage));
+            UpdatePagedData();
+        }
+
+        private void UpdatePagedData()
+        {
+            if (_allPayrollRecords == null) return;
+            
+            IEnumerable<PayrollRecord> query = _allPayrollRecords;
+
+            switch (_sortColumn)
+            {
+                case "EMP #":
+                    query = _sortAscending ? query.OrderBy(x => x.EmpNumber) : query.OrderByDescending(x => x.EmpNumber);
+                    break;
+                case "Employee":
+                    query = _sortAscending ? query.OrderBy(x => x.EmployeeName) : query.OrderByDescending(x => x.EmployeeName);
+                    break;
+                case "Gross":
+                    query = _sortAscending ? query.OrderBy(x => x.GrossRaw) : query.OrderByDescending(x => x.GrossRaw);
+                    break;
+                case "Net Pay":
+                    query = _sortAscending ? query.OrderBy(x => x.NetPayRaw) : query.OrderByDescending(x => x.NetPayRaw);
+                    break;
+                case "Status":
+                    query = _sortAscending ? query.OrderBy(x => x.Status) : query.OrderByDescending(x => x.Status);
+                    break;
+                case "Date":
+                default:
+                    // ID is sequential and gives proper date sorting
+                    query = _sortAscending ? query.OrderBy(x => x.Id) : query.OrderByDescending(x => x.Id);
+                    break;
+            }
+
+            TotalPages = Math.Max(1, (int)Math.Ceiling(query.Count() / (double)PageSize));
+            if (_currentPage > TotalPages) { _currentPage = TotalPages; OnPropertyChanged(nameof(CurrentPage)); }
+
+            var paged = query.Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
+            
+            PayrollRecords.Clear();
+            foreach (var item in paged) PayrollRecords.Add(item);
         }
 
         private void FilterDeductionEmployees()
@@ -210,7 +279,7 @@ namespace PayrollSystem.ViewModels
 
         private void ExportToExcel()
         {
-            if (PayrollRecords.Count == 0)
+            if (_allPayrollRecords.Count == 0)
             {
                 StatusMessage = "No records to export.";
                 return;
@@ -261,7 +330,7 @@ namespace PayrollSystem.ViewModels
             decimal totalGross = 0, totalSss = 0, totalPag = 0, totalPhil = 0, totalDed = 0, totalNet = 0;
             int rowNum = 2;
 
-            foreach (var rec in PayrollRecords)
+            foreach (var rec in _allPayrollRecords)
             {
                 rows.Append($"<row r=\"{rowNum}\">");
                 rows.Append($"<c r=\"A{rowNum}\" t=\"s\"><v>{SharedStr(rec.EmpNumber)}</v></c>");
@@ -354,7 +423,7 @@ namespace PayrollSystem.ViewModels
 
             decimal totalGross = 0, totalSss = 0, totalPag = 0, totalPhil = 0, totalDed = 0, totalNet = 0;
 
-            foreach (var rec in PayrollRecords)
+            foreach (var rec in _allPayrollRecords)
             {
                 sb.AppendLine($"{rec.EmpNumber},\"{rec.EmployeeName}\",\"{rec.PayrollDate}\",{rec.GrossRaw:F2},{rec.Sss:F2},{rec.Pagibig:F2},{rec.Philhealth:F2},{rec.DeductionsRaw:F2},{rec.NetPayRaw:F2},{rec.Status}");
                 totalGross += rec.GrossRaw; totalSss += rec.Sss; totalPag += rec.Pagibig;
