@@ -5,15 +5,15 @@
     <!-- GREEN MINIMALIST THEME — Payroll Management System        -->
     <!-- ═══════════════════════════════════════════════════════════ -->
 
-    <!-- Color Palette -->
-    <Color x:Key="PrimaryGreen">#2E7D32</Color>
-    <Color x:Key="PrimaryGreenDark">#1B5E20</Color>
-    <Color x:Key="PrimaryGreenLight">#4CAF50</Color>
-    <Color x:Key="AccentGreen">#66BB6A</Color>
-    <Color x:Key="SurfaceGreen">#E8F5E9</Color>
+    <!-- Color Palette (Matched to Logo #25BD6A) -->
+    <Color x:Key="PrimaryGreen">#25BD6A</Color>
+    <Color x:Key="PrimaryGreenDark">#138A49</Color>
+    <Color x:Key="PrimaryGreenLight">#54DE92</Color>
+    <Color x:Key="AccentGreen">#42D480</Color>
+    <Color x:Key="SurfaceGreen">#E7FAEF</Color>
     <Color x:Key="BackgroundColor">#F5F7FA</Color>
     <Color x:Key="CardColor">#FFFFFF</Color>
-    <Color x:Key="SidebarColor">#1B5E20</Color>
+    <Color x:Key="SidebarColor">#138A49</Color>
     <Color x:Key="TextPrimary">#212121</Color>
     <Color x:Key="TextSecondary">#757575</Color>
     <Color x:Key="TextOnPrimary">#FFFFFF</Color>
@@ -21,7 +21,7 @@
     <Color x:Key="ErrorColor">#E53935</Color>
     <Color x:Key="WarningColor">#FB8C00</Color>
     <Color x:Key="SuccessColor">#43A047</Color>
-    <Color x:Key="HoverGreen">#388E3C</Color>
+    <Color x:Key="HoverGreen">#1FA65C</Color>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryGreen}"/>
@@ -171,7 +171,7 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="Background">
                                 <Setter.Value>
-                                    <SolidColorBrush Color="#2E7D32" Opacity="0.5"/>
+                                    <SolidColorBrush Color="#25BD6A" Opacity="0.5"/>
                                 </Setter.Value>
                             </Setter>
                             <Setter Property="Foreground" Value="White"/>
@@ -185,7 +185,7 @@
     <Style x:Key="NavButtonActive" TargetType="Button" BasedOn="{StaticResource NavButton}">
         <Setter Property="Background">
             <Setter.Value>
-                <SolidColorBrush Color="#2E7D32" Opacity="0.7"/>
+                <SolidColorBrush Color="#25BD6A" Opacity="0.7"/>
             </Setter.Value>
         </Setter>
         <Setter Property="Foreground" Value="White"/>

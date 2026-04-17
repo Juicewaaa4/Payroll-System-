@@ -103,7 +103,7 @@
                                                                 <Setter Property="Foreground" Value="#FF9800"/>
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding Record.Status}" Value="Paid">
-                                                                <Setter Property="Foreground" Value="#2E7D32"/>
+                                                                <Setter Property="Foreground" Value="#25BD6A"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -126,7 +126,7 @@
                                                         <Style TargetType="Button">
                                                             <Setter Property="Visibility" Value="Collapsed"/>
                                                             <Setter Property="Background" Value="#E8F5E9"/>
-                                                            <Setter Property="Foreground" Value="#2E7D32"/>
+                                                            <Setter Property="Foreground" Value="#25BD6A"/>
                                                             <Setter Property="BorderBrush" Value="#81C784"/>
                                                             <Setter Property="BorderThickness" Value="1"/>
                                                             <Setter Property="Padding" Value="8,3"/>

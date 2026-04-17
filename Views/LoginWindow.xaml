@@ -22,10 +22,10 @@
             <Border Grid.Row="0" CornerRadius="16,16,0,0" Padding="0,44,0,40">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#1B5E20" Offset="0"/>
-                        <GradientStop Color="#2E7D32" Offset="0.4"/>
-                        <GradientStop Color="#388E3C" Offset="0.7"/>
-                        <GradientStop Color="#43A047" Offset="1"/>
+                        <GradientStop Color="#138A49" Offset="0"/>
+                        <GradientStop Color="#25BD6A" Offset="0.4"/>
+                        <GradientStop Color="#42D480" Offset="0.7"/>
+                        <GradientStop Color="#54DE92" Offset="1"/>
                     </LinearGradientBrush>
                 </Border.Background>
 
@@ -33,8 +33,7 @@
                     <!-- Logo circle -->
                     <Border Width="64" Height="64" CornerRadius="32" Background="#FFFFFF20"
                             HorizontalAlignment="Center" Margin="0,0,0,16">
-                        <TextBlock Text="💰" FontSize="28" HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
+                        <Image Source="/Logo/Payroll Icon.png" Width="40" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
                     <TextBlock Text="P A Y R O L L   S Y S T E M" FontSize="20" FontWeight="Bold" Foreground="White"
                                HorizontalAlignment="Center" FontFamily="{StaticResource HeadingFont}"/>
@@ -166,8 +165,8 @@
                                     Height="{TemplateBinding Height}">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                        <GradientStop Color="#2E7D32" Offset="0"/>
-                                        <GradientStop Color="#43A047" Offset="1"/>
+                                        <GradientStop Color="#25BD6A" Offset="0"/>
+                                        <GradientStop Color="#54DE92" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -177,8 +176,8 @@
                                     <Setter TargetName="btnBorder" Property="Background">
                                         <Setter.Value>
                                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                <GradientStop Color="#1B5E20" Offset="0"/>
-                                                <GradientStop Color="#2E7D32" Offset="1"/>
+                                                <GradientStop Color="#138A49" Offset="0"/>
+                                                <GradientStop Color="#25BD6A" Offset="1"/>
                                             </LinearGradientBrush>
                                         </Setter.Value>
                                     </Setter>
@@ -186,7 +185,7 @@
                                 <Trigger Property="IsPressed" Value="True">
                                     <Setter TargetName="btnBorder" Property="Background">
                                         <Setter.Value>
-                                            <SolidColorBrush Color="#1B5E20"/>
+                                            <SolidColorBrush Color="#138A49"/>
                                         </Setter.Value>
                                     </Setter>
                                 </Trigger>
@@ -204,9 +203,9 @@
                             <TextBlock Text="🔑" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <TextBlock FontSize="11" Foreground="#757575" VerticalAlignment="Center">
                                 <Run Text="Default: "/>
-                                <Run Text="admin" FontWeight="SemiBold" Foreground="#2E7D32"/>
+                                <Run Text="admin" FontWeight="SemiBold" Foreground="#25BD6A"/>
                                 <Run Text=" / "/>
-                                <Run Text="admin123" FontWeight="SemiBold" Foreground="#2E7D32"/>
+                                <Run Text="admin123" FontWeight="SemiBold" Foreground="#25BD6A"/>
                             </TextBlock>
                         </StackPanel>
                     </Border>

@@ -7,7 +7,8 @@
         Height="720" Width="1200"
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource BackgroundBrush}">
+        Background="{StaticResource BackgroundBrush}"
+        Icon="/Logo/Payroll Icon.png">
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
@@ -44,14 +45,14 @@
             <DockPanel>
                 <!-- Logo / Brand -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,30,0,20">
-                    <TextBlock Text="💰" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                    <Image Source="/Logo/Payroll Icon.png" Width="54" Height="54" HorizontalAlignment="Center" Margin="0,0,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
                     <TextBlock Text="PAYROLL" FontSize="18" FontWeight="Bold" Foreground="White"
                                HorizontalAlignment="Center" FontFamily="{StaticResource HeadingFont}"/>
                     <TextBlock Text="Management System" FontSize="11" Foreground="#80CBC4"
                                HorizontalAlignment="Center" Margin="0,2,0,0"/>
                 </StackPanel>
 
-                <Border DockPanel.Dock="Top" Height="1" Background="#2E7D32" Margin="20,0"/>
+                <Border DockPanel.Dock="Top" Height="1" Background="#25BD6A" Margin="20,0"/>
 
                 <!-- Navigation -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,16,0,0">
