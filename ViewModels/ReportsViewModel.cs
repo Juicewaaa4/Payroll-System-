@@ -44,6 +44,11 @@ namespace PayrollSystem.ViewModels
         public decimal TotalPagibig { get => _totalPagibig; set => SetProperty(ref _totalPagibig, value); }
         public decimal TotalPhilhealth { get => _totalPhilhealth; set => SetProperty(ref _totalPhilhealth, value); }
         public decimal TotalAllDeductions { get => _totalAllDeductions; set => SetProperty(ref _totalAllDeductions, value); }
+        private decimal _totalLoan, _totalLate, _totalUndertime, _totalOthers;
+        public decimal TotalLoan { get => _totalLoan; set => SetProperty(ref _totalLoan, value); }
+        public decimal TotalLate { get => _totalLate; set => SetProperty(ref _totalLate, value); }
+        public decimal TotalUndertime { get => _totalUndertime; set => SetProperty(ref _totalUndertime, value); }
+        public decimal TotalOthers { get => _totalOthers; set => SetProperty(ref _totalOthers, value); }
 
         public ObservableCollection<PayrollRecord> PayrollRecords { get; } = new();
         public ObservableCollection<EmployeeItem> AllEmployees { get; } = new();
@@ -51,10 +56,12 @@ namespace PayrollSystem.ViewModels
         public ObservableCollection<PayrollRecord> EmployeeDeductionRecords { get; } = new();
 
         public ICommand ExportExcelCommand { get; }
+        public ICommand ExportDeductionsExcelCommand { get; }
 
         public ReportsViewModel()
         {
             ExportExcelCommand = new RelayCommand(_ => ExportToExcel());
+            ExportDeductionsExcelCommand = new RelayCommand(_ => ExportDeductionsToExcel());
         }
 
         public void LoadData()
@@ -89,7 +96,7 @@ namespace PayrollSystem.ViewModels
                         Id = reader.GetInt32("id"),
                         EmployeeName = reader.GetString("employee_name"),
                         EmpNumber = reader.GetString("emp_number"),
-                        PayrollDate = reader.GetDateTime("payroll_date").ToString("MMM dd, yyyy  hh:mm tt"),
+                        PayrollDate = reader.GetDateTime("payroll_date").ToString("MMM dd, yyyy  h:mm tt"),
                         GrossSalary = $"₱{reader.GetDecimal("gross_salary"):N2}",
                         GrossRaw = reader.GetDecimal("gross_salary"),
                         Deductions = $"₱{reader.GetDecimal("total_deductions"):N2}",
@@ -157,7 +164,9 @@ namespace PayrollSystem.ViewModels
         private void LoadEmployeeDeductions()
         {
             EmployeeDeductionRecords.Clear();
-            TotalSss = 0; TotalPagibig = 0; TotalPhilhealth = 0; TotalAllDeductions = 0;
+            TotalSss = 0; TotalPagibig = 0; TotalPhilhealth = 0; 
+            TotalLoan = 0; TotalLate = 0; TotalUndertime = 0; TotalOthers = 0;
+            TotalAllDeductions = 0;
 
             if (SelectedDeductionEmployee == null) { HasDeductionRecords = false; return; }
 
@@ -178,12 +187,20 @@ namespace PayrollSystem.ViewModels
                         NetPayRaw = rec.NetPayRaw,
                         Sss = rec.Sss,
                         Pagibig = rec.Pagibig,
-                        Philhealth = rec.Philhealth
+                        Philhealth = rec.Philhealth,
+                        Loan = rec.Loan,
+                        Late = rec.Late,
+                        Undertime = rec.Undertime,
+                        Others = rec.Others
                     });
 
                     TotalSss += rec.Sss;
                     TotalPagibig += rec.Pagibig;
                     TotalPhilhealth += rec.Philhealth;
+                    TotalLoan += rec.Loan;
+                    TotalLate += rec.Late;
+                    TotalUndertime += rec.Undertime;
+                    TotalOthers += rec.Others;
                     TotalAllDeductions += rec.DeductionsRaw;
                 }
             }
@@ -349,6 +366,207 @@ namespace PayrollSystem.ViewModels
 
             File.WriteAllText(filePath, sb.ToString());
         }
+
+        private void ExportDeductionsToExcel()
+        {
+            if (EmployeeDeductionRecords.Count == 0 || SelectedDeductionEmployee == null)
+            {
+                StatusMessage = "No deduction records to export.";
+                return;
+            }
+
+            try
+            {
+                var saveDialog = new SaveFileDialog
+                {
+                    Title = "Export Deduction History",
+                    Filter = "Excel XML (*.xlsx)|*.xlsx|CSV Files (*.csv)|*.csv",
+                    FileName = $"Deductions_{SelectedDeductionEmployee.EmpNumber}_{DateTime.Now:yyyyMMdd}",
+                    DefaultExt = ".xlsx"
+                };
+
+                if (saveDialog.ShowDialog() != true) return;
+
+                var filePath = saveDialog.FileName;
+
+                if (filePath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+                    ExportDeductionsAsXlsx(filePath);
+                else
+                    ExportDeductionsAsCsv(filePath);
+
+                StatusMessage = $"✓ Exported deductions successfully: {Path.GetFileName(filePath)}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Export error: {ex.Message}";
+            }
+        }
+
+        private void ExportDeductionsAsXlsx(string filePath)
+        {
+            var sharedStrings = new List<string>();
+            int SharedStr(string s) { if (!sharedStrings.Contains(s)) sharedStrings.Add(s); return sharedStrings.IndexOf(s); }
+
+            var rows = new StringBuilder();
+            
+            // Header Info for Professional Look
+            rows.Append("<row r=\"1\"><c r=\"A1\" t=\"s\" s=\"1\"><v>" + SharedStr("Zoey's Billiard House - Employee Deduction History") + "</v></c></row>");
+            rows.Append("<row r=\"2\">");
+            rows.Append("<c r=\"A2\" t=\"s\" s=\"2\"><v>" + SharedStr($"Employee: {SelectedDeductionEmployee?.FullName ?? ""} ({SelectedDeductionEmployee?.EmpNumber ?? ""})") + "</v></c>");
+            rows.Append("</row>");
+            rows.Append("<row r=\"3\"></row>");
+
+            string[] headers = { "Date", "Gross Salary", "SSS", "PAG-IBIG", "PhilHealth", "Loan", "Late", "Undertime", "Others", "Total Deductions", "Net Pay" };
+            rows.Append("<row r=\"4\">");
+            for (int i = 0; i < headers.Length; i++)
+            {
+                var col = (char)('A' + i);
+                rows.Append($"<c r=\"{col}4\" t=\"s\" s=\"3\"><v>{SharedStr(headers[i])}</v></c>");
+            }
+            rows.Append("</row>");
+
+            int rowNum = 5;
+            foreach (var rec in EmployeeDeductionRecords)
+            {
+                rows.Append($"<row r=\"{rowNum}\">");
+                rows.Append($"<c r=\"A{rowNum}\" t=\"s\" s=\"4\"><v>{SharedStr(rec.PayrollDate)}</v></c>");
+                rows.Append($"<c r=\"B{rowNum}\" s=\"5\"><v>{rec.GrossRaw}</v></c>");
+                rows.Append($"<c r=\"C{rowNum}\" s=\"5\"><v>{rec.Sss}</v></c>");
+                rows.Append($"<c r=\"D{rowNum}\" s=\"5\"><v>{rec.Pagibig}</v></c>");
+                rows.Append($"<c r=\"E{rowNum}\" s=\"5\"><v>{rec.Philhealth}</v></c>");
+                rows.Append($"<c r=\"F{rowNum}\" s=\"5\"><v>{rec.Loan}</v></c>");
+                rows.Append($"<c r=\"G{rowNum}\" s=\"5\"><v>{rec.Late}</v></c>");
+                rows.Append($"<c r=\"H{rowNum}\" s=\"5\"><v>{rec.Undertime}</v></c>");
+                rows.Append($"<c r=\"I{rowNum}\" s=\"5\"><v>{rec.Others}</v></c>");
+                rows.Append($"<c r=\"J{rowNum}\" s=\"5\"><v>{rec.DeductionsRaw}</v></c>");
+                rows.Append($"<c r=\"K{rowNum}\" s=\"5\"><v>{rec.NetPayRaw}</v></c>");
+                rows.Append("</row>");
+                rowNum++;
+            }
+
+            rows.Append($"<row r=\"{rowNum}\">");
+            rows.Append($"<c r=\"A{rowNum}\" t=\"s\" s=\"6\"><v>{SharedStr("TOTALS")}</v></c>");
+            rows.Append($"<c r=\"B{rowNum}\" s=\"7\"><v>{EmployeeDeductionRecords.Sum(r => r.GrossRaw)}</v></c>");
+            rows.Append($"<c r=\"C{rowNum}\" s=\"7\"><v>{TotalSss}</v></c>");
+            rows.Append($"<c r=\"D{rowNum}\" s=\"7\"><v>{TotalPagibig}</v></c>");
+            rows.Append($"<c r=\"E{rowNum}\" s=\"7\"><v>{TotalPhilhealth}</v></c>");
+            rows.Append($"<c r=\"F{rowNum}\" s=\"7\"><v>{TotalLoan}</v></c>");
+            rows.Append($"<c r=\"G{rowNum}\" s=\"7\"><v>{TotalLate}</v></c>");
+            rows.Append($"<c r=\"H{rowNum}\" s=\"7\"><v>{TotalUndertime}</v></c>");
+            rows.Append($"<c r=\"I{rowNum}\" s=\"7\"><v>{TotalOthers}</v></c>");
+            rows.Append($"<c r=\"J{rowNum}\" s=\"7\"><v>{TotalAllDeductions}</v></c>");
+            rows.Append($"<c r=\"K{rowNum}\" s=\"7\"><v>{EmployeeDeductionRecords.Sum(r => r.NetPayRaw)}</v></c>");
+            rows.Append("</row>");
+
+            var sheetData = $"<sheetData>{rows}</sheetData>";
+            var cols = "<cols><col min=\"1\" max=\"1\" width=\"25\" customWidth=\"1\"/><col min=\"2\" max=\"11\" width=\"15\" customWidth=\"1\"/></cols>";
+            var sheetXml = $@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+<worksheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">{cols}{sheetData}</worksheet>";
+
+            var ssXml = new StringBuilder();
+            ssXml.Append(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?><sst xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"" count=""" + sharedStrings.Count + @""" uniqueCount=""" + sharedStrings.Count + @""">");
+            foreach (var s in sharedStrings)
+            {
+                var escaped = System.Security.SecurityElement.Escape(s) ?? "";
+                ssXml.Append($"<si><t>{escaped}</t></si>");
+            }
+            ssXml.Append("</sst>");
+
+            var styles = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+<styleSheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">
+  <numFmts count=""1"">
+    <numFmt numFmtId=""164"" formatCode=""_(&quot;₱&quot;* #,##0.00_);_(&quot;₱&quot;* \(#,##0.00\);_(&quot;₱&quot;* &quot;-&quot;??_);_(@_)""/>
+  </numFmts>
+  <fonts count=""4"">
+    <font><sz val=""11""/><name val=""Calibri""/></font>
+    <font><b/><sz val=""14""/><color rgb=""FF1B5E20""/><name val=""Calibri""/></font>
+    <font><b/><sz val=""12""/><name val=""Calibri""/></font>
+    <font><b/><sz val=""11""/><color rgb=""FFFFFFFF""/><name val=""Calibri""/></font>
+  </fonts>
+  <fills count=""4"">
+    <fill><patternFill patternType=""none""/></fill>
+    <fill><patternFill patternType=""gray125""/></fill>
+    <fill><patternFill patternType=""solid""><fgColor rgb=""FF2E7D32""/><bgColor indexed=""64""/></patternFill></fill>
+    <fill><patternFill patternType=""solid""><fgColor rgb=""FFF2F2F2""/><bgColor indexed=""64""/></patternFill></fill>
+  </fills>
+  <borders count=""2"">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style=""thin""><color rgb=""FFDDDDDD""/></left>
+      <right style=""thin""><color rgb=""FFDDDDDD""/></right>
+      <top style=""thin""><color rgb=""FFDDDDDD""/></top>
+      <bottom style=""thin""><color rgb=""FFDDDDDD""/></bottom>
+      <diagonal/>
+    </border>
+  </borders>
+  <cellXfs count=""8"">
+    <xf numFmtId=""0"" fontId=""0"" fillId=""0"" borderId=""0"" xfId=""0""/>
+    <xf numFmtId=""0"" fontId=""1"" fillId=""0"" borderId=""0"" xfId=""0"" applyFont=""1""/>
+    <xf numFmtId=""0"" fontId=""2"" fillId=""0"" borderId=""0"" xfId=""0"" applyFont=""1""/>
+    <xf numFmtId=""0"" fontId=""3"" fillId=""2"" borderId=""1"" xfId=""0"" applyFont=""1"" applyFill=""1"" applyBorder=""1""/>
+    <xf numFmtId=""0"" fontId=""0"" fillId=""0"" borderId=""1"" xfId=""0"" applyBorder=""1""/>
+    <xf numFmtId=""164"" fontId=""0"" fillId=""0"" borderId=""1"" xfId=""0"" applyNumberFormat=""1"" applyBorder=""1""/>
+    <xf numFmtId=""0"" fontId=""2"" fillId=""3"" borderId=""1"" xfId=""0"" applyFont=""1"" applyFill=""1"" applyBorder=""1""/>
+    <xf numFmtId=""164"" fontId=""2"" fillId=""3"" borderId=""1"" xfId=""0"" applyNumberFormat=""1"" applyFont=""1"" applyFill=""1"" applyBorder=""1""/>
+  </cellXfs>
+</styleSheet>";
+
+            var contentTypes = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+<Types xmlns=""http://schemas.openxmlformats.org/package/2006/content-types"">
+<Default Extension=""rels"" ContentType=""application/vnd.openxmlformats-package.relationships+xml""/>
+<Default Extension=""xml"" ContentType=""application/xml""/>
+<Override PartName=""/xl/workbook.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml""/>
+<Override PartName=""/xl/worksheets/sheet1.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml""/>
+<Override PartName=""/xl/sharedStrings.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml""/>
+<Override PartName=""/xl/styles.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml""/>
+</Types>";
+
+            var rels = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+<Relationships xmlns=""http://schemas.openxmlformats.org/package/2006/relationships"">
+<Relationship Id=""rId1"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"" Target=""xl/workbook.xml""/>
+</Relationships>";
+
+            var workbookRels = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+<Relationships xmlns=""http://schemas.openxmlformats.org/package/2006/relationships"">
+<Relationship Id=""rId1"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"" Target=""worksheets/sheet1.xml""/>
+<Relationship Id=""rId2"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"" Target=""sharedStrings.xml""/>
+<Relationship Id=""rId3"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"" Target=""styles.xml""/>
+</Relationships>";
+
+            var workbook = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+<workbook xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"">
+<sheets><sheet name=""Deduction History"" sheetId=""1"" r:id=""rId1""/></sheets></workbook>";
+
+            if (File.Exists(filePath)) File.Delete(filePath);
+            using var zip = System.IO.Compression.ZipFile.Open(filePath, System.IO.Compression.ZipArchiveMode.Create);
+            WriteEntry(zip, "[Content_Types].xml", contentTypes);
+            WriteEntry(zip, "_rels/.rels", rels);
+            WriteEntry(zip, "xl/workbook.xml", workbook);
+            WriteEntry(zip, "xl/_rels/workbook.xml.rels", workbookRels);
+            WriteEntry(zip, "xl/worksheets/sheet1.xml", sheetXml);
+            WriteEntry(zip, "xl/styles.xml", styles);
+            WriteEntry(zip, "xl/sharedStrings.xml", ssXml.ToString());
+        }
+
+        private void ExportDeductionsAsCsv(string filePath)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Zoey's Billiard House - Employee Deduction History");
+            sb.AppendLine($"Employee: {SelectedDeductionEmployee.FullName} ({SelectedDeductionEmployee.EmpNumber})");
+            sb.AppendLine($"Generated: {DateTime.Now:MMM dd yyyy  hh:mm tt}");
+            sb.AppendLine();
+            sb.AppendLine("Date,Gross Salary,SSS,PAG-IBIG,PhilHealth,Loan,Late,Undertime,Others,Total Deductions,Net Pay");
+
+            foreach (var rec in EmployeeDeductionRecords)
+            {
+                sb.AppendLine($"\"{rec.PayrollDate}\",{rec.GrossRaw:F2},{rec.Sss:F2},{rec.Pagibig:F2},{rec.Philhealth:F2},{rec.Loan:F2},{rec.Late:F2},{rec.Undertime:F2},{rec.Others:F2},{rec.DeductionsRaw:F2},{rec.NetPayRaw:F2}");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine($"TOTALS,{EmployeeDeductionRecords.Sum(r => r.GrossRaw):F2},{TotalSss:F2},{TotalPagibig:F2},{TotalPhilhealth:F2},{TotalLoan:F2},{TotalLate:F2},{TotalUndertime:F2},{TotalOthers:F2},{TotalAllDeductions:F2},{EmployeeDeductionRecords.Sum(r => r.NetPayRaw):F2}");
+
+            File.WriteAllText(filePath, sb.ToString());
+        }
     }
 
     public class PayrollRecord
@@ -367,5 +585,9 @@ namespace PayrollSystem.ViewModels
         public decimal Sss { get; set; }
         public decimal Pagibig { get; set; }
         public decimal Philhealth { get; set; }
+        public decimal Loan { get; set; }
+        public decimal Late { get; set; }
+        public decimal Undertime { get; set; }
+        public decimal Others { get; set; }
     }
 }

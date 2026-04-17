@@ -7,34 +7,9 @@
         <StackPanel Margin="32,28,32,32">
 
             <!-- Header -->
-            <DockPanel Margin="0,0,0,4">
-                <TextBlock Text="Reports &amp; Transaction History" Style="{StaticResource PageTitle}" DockPanel.Dock="Left"/>
-                <!-- Export Button -->
-                <Button DockPanel.Dock="Right" VerticalAlignment="Center" Cursor="Hand"
-                        Command="{Binding ExportExcelCommand}">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="exportBg" Background="{StaticResource PrimaryBrush}"
-                                    CornerRadius="8" Padding="14,8">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="📊" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Export" FontSize="12" FontWeight="SemiBold"
-                                               Foreground="White" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="exportBg" Property="Background">
-                                        <Setter.Value>
-                                            <SolidColorBrush Color="{StaticResource HoverGreen}"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-            </DockPanel>
+            <StackPanel Margin="0,0,0,4">
+                <TextBlock Text="Reports &amp; Transaction History" Style="{StaticResource PageTitle}"/>
+            </StackPanel>
             <TextBlock Text="View payroll records and employee deduction history" Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="13" Margin="0,0,0,24"/>
 
@@ -54,6 +29,31 @@
                         <TextBlock Text="TO DATE" Style="{StaticResource FieldLabel}"/>
                         <DatePicker SelectedDate="{Binding EndDate}" Width="150" FontSize="13"/>
                     </StackPanel>
+
+                    <!-- Export Button -->
+                    <Button VerticalAlignment="Bottom" Cursor="Hand" Command="{Binding ExportExcelCommand}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="exportBg" Background="{StaticResource PrimaryBrush}"
+                                        CornerRadius="6" Padding="12,7">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📊" FontSize="12" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Export" FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="White" VerticalAlignment="Center" FontFamily="{StaticResource PrimaryFont}"/>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="exportBg" Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="{StaticResource HoverGreen}"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                 </StackPanel>
             </Border>
 
@@ -71,14 +71,36 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="EMP #" Binding="{Binding EmpNumber}" Width="85"/>
                             <DataGridTextColumn Header="Employee" Binding="{Binding EmployeeName}" Width="*"/>
-                            <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="155"/>
+                            <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="175"/>
                             <DataGridTextColumn Header="Gross" Binding="{Binding GrossSalary}" Width="95"/>
                             <DataGridTextColumn Header="SSS" Binding="{Binding Sss, StringFormat=₱{0:N2}}" Width="75"/>
                             <DataGridTextColumn Header="PAG-IBIG" Binding="{Binding Pagibig, StringFormat=₱{0:N2}}" Width="78"/>
                             <DataGridTextColumn Header="PhilHealth" Binding="{Binding Philhealth, StringFormat=₱{0:N2}}" Width="82"/>
                             <DataGridTextColumn Header="Total Ded." Binding="{Binding Deductions}" Width="90"/>
                             <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="95"/>
-                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="75"/>
+                            <DataGridTemplateColumn Header="Status" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Status}" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#4CAF50"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    <Setter Property="FontSize" Value="12"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Pending">
+                                                            <Setter Property="Foreground" Value="#FF9800"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Paid">
+                                                            <Setter Property="Foreground" Value="#2E7D32"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
 
@@ -98,6 +120,33 @@
                         <DockPanel>
                             <TextBlock Text="Employee Deduction History" Style="{StaticResource SectionTitle}"
                                        DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                            
+                            <!-- Export Button (Deductions) -->
+                            <Button DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center" Cursor="Hand"
+                                    Command="{Binding ExportDeductionsExcelCommand}"
+                                    Visibility="{Binding HasDeductionRecords, Converter={StaticResource BoolToVisConverter}}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="exportDedBg" Background="{StaticResource PrimaryBrush}"
+                                                CornerRadius="6" Padding="12,6">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="📊" FontSize="12" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="Export Deductions" FontSize="11" FontWeight="SemiBold"
+                                                           Foreground="White" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="exportDedBg" Property="Background">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="{StaticResource HoverGreen}"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
                         </DockPanel>
                     </Border>
 
@@ -150,12 +199,16 @@
                                       RowStyle="{StaticResource ModernDataGridRow}"
                                       MaxHeight="300">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="155"/>
-                                    <DataGridTextColumn Header="Gross" Binding="{Binding GrossSalary}" Width="100"/>
-                                    <DataGridTextColumn Header="SSS" Binding="{Binding Sss, StringFormat=₱{0:N2}}" Width="85"/>
-                                    <DataGridTextColumn Header="PAG-IBIG" Binding="{Binding Pagibig, StringFormat=₱{0:N2}}" Width="85"/>
-                                    <DataGridTextColumn Header="PhilHealth" Binding="{Binding Philhealth, StringFormat=₱{0:N2}}" Width="90"/>
-                                    <DataGridTextColumn Header="Total Ded." Binding="{Binding Deductions}" Width="95"/>
+                                    <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="165"/>
+                                    <DataGridTextColumn Header="Gross" Binding="{Binding GrossSalary}" Width="80"/>
+                                    <DataGridTextColumn Header="SSS" Binding="{Binding Sss, StringFormat=₱{0:N2}}" Width="70"/>
+                                    <DataGridTextColumn Header="PAG-IBIG" Binding="{Binding Pagibig, StringFormat=₱{0:N2}}" Width="70"/>
+                                    <DataGridTextColumn Header="PhilHealth" Binding="{Binding Philhealth, StringFormat=₱{0:N2}}" Width="75"/>
+                                    <DataGridTextColumn Header="Loan" Binding="{Binding Loan, StringFormat=₱{0:N2}}" Width="65"/>
+                                    <DataGridTextColumn Header="Late" Binding="{Binding Late, StringFormat=₱{0:N2}}" Width="60"/>
+                                    <DataGridTextColumn Header="Undertime" Binding="{Binding Undertime, StringFormat=₱{0:N2}}" Width="75"/>
+                                    <DataGridTextColumn Header="Others" Binding="{Binding Others, StringFormat=₱{0:N2}}" Width="65"/>
+                                    <DataGridTextColumn Header="Total Ded." Binding="{Binding Deductions}" Width="85"/>
                                     <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
@@ -164,22 +217,34 @@
                             <Border Background="#FAFAFA" CornerRadius="0,0,8,8" Padding="16,10" Margin="0,4,0,0"
                                     Visibility="{Binding HasDeductionRecords, Converter={StaticResource BoolToVisConverter}}">
                                 <Grid>
-                                    <TextBlock Text="TOTAL DEDUCTIONS PAID:" FontSize="12" FontWeight="Bold" Foreground="#424242"/>
+                                    <TextBlock Text="TOTALS:" FontSize="12" FontWeight="Bold" Foreground="#424242"/>
                                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,16,0">
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,10,0">
                                             <Run Text="SSS: ₱"/>
                                             <Run Text="{Binding TotalSss, StringFormat=N2}"/>
                                         </TextBlock>
-                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,16,0">
-                                            <Run Text="PAG-IBIG: ₱"/>
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,10,0">
+                                            <Run Text="PAGIBIG: ₱"/>
                                             <Run Text="{Binding TotalPagibig, StringFormat=N2}"/>
                                         </TextBlock>
-                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,16,0">
-                                            <Run Text="PhilHealth: ₱"/>
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,10,0">
+                                            <Run Text="Health: ₱"/>
                                             <Run Text="{Binding TotalPhilhealth, StringFormat=N2}"/>
                                         </TextBlock>
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,10,0">
+                                            <Run Text="Loan: ₱"/>
+                                            <Run Text="{Binding TotalLoan, StringFormat=N2}"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,10,0">
+                                            <Run Text="Late/UT: ₱"/>
+                                            <Run Text="{Binding TotalLate, StringFormat=N2}"/>
+                                        </TextBlock>
+                                        <TextBlock FontSize="12" Foreground="#757575" Margin="0,0,15,0">
+                                            <Run Text="Others: ₱"/>
+                                            <Run Text="{Binding TotalOthers, StringFormat=N2}"/>
+                                        </TextBlock>
                                         <TextBlock FontSize="12" FontWeight="Bold" Foreground="#E53935">
-                                            <Run Text="Total: ₱"/>
+                                            <Run Text="Total Deductions: ₱"/>
                                             <Run Text="{Binding TotalAllDeductions, StringFormat=N2}"/>
                                         </TextBlock>
                                     </StackPanel>

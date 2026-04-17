@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using PayrollSystem.DataAccess;
 using MySql.Data.MySqlClient;
 
@@ -38,10 +39,16 @@ namespace PayrollSystem.ViewModels
                 if (!DatabaseHelper.TestConnection())
                 {
                     // Fallback demo data
-                    TotalEmployees = "13";
-                    ActiveDepartments = "3";
-                    TotalPayroll = "₱0.00";
-                    PendingPayroll = "0";
+                    DemoDatabase.Initialize();
+                    TotalEmployees = DemoDatabase.Employees.Count(e => e.IsActive).ToString();
+                    ActiveDepartments = DemoDatabase.Departments.Count.ToString();
+                    
+                    var totalMonthly = DemoDatabase.PayrollHistory
+                        .Where(p => p.PayrollDate.Month == DateTime.Now.Month && p.PayrollDate.Year == DateTime.Now.Year)
+                        .Sum(p => p.NetPayRaw);
+                    TotalPayroll = $"₱{totalMonthly:N2}";
+
+                    PendingPayroll = DemoDatabase.PayrollHistory.Count(p => p.Status == "Pending").ToString();
                     LoadDemoActivities();
                     return;
                 }
@@ -62,7 +69,7 @@ namespace PayrollSystem.ViewModels
                     TotalPayroll = $"₱{Convert.ToDecimal(cmd.ExecuteScalar()):N2}";
 
                 // Pending payroll
-                using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM payroll WHERE status = 'Draft'", conn))
+                using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM payroll WHERE status = 'Pending'", conn))
                     PendingPayroll = Convert.ToInt32(cmd.ExecuteScalar()).ToString();
 
                 // Recent activities
@@ -70,10 +77,15 @@ namespace PayrollSystem.ViewModels
             }
             catch
             {
-                TotalEmployees = "13";
-                ActiveDepartments = "3";
-                TotalPayroll = "₱0.00";
-                PendingPayroll = "0";
+                TotalEmployees = DemoDatabase.Employees.Count(e => e.IsActive).ToString();
+                ActiveDepartments = DemoDatabase.Departments.Count.ToString();
+                
+                var totalMonthly = DemoDatabase.PayrollHistory
+                    .Where(p => p.PayrollDate.Month == DateTime.Now.Month && p.PayrollDate.Year == DateTime.Now.Year)
+                    .Sum(p => p.NetPayRaw);
+                TotalPayroll = $"₱{totalMonthly:N2}";
+
+                PendingPayroll = DemoDatabase.PayrollHistory.Count(p => p.Status == "Pending").ToString();
                 LoadDemoActivities();
             }
         }
@@ -105,9 +117,22 @@ namespace PayrollSystem.ViewModels
         private void LoadDemoActivities()
         {
             RecentActivities.Clear();
-            RecentActivities.Add(new RecentActivity { Description = "System initialized", Amount = "—", Date = DateTime.Now.ToString("MMM dd, yyyy"), Status = "Info" });
-            RecentActivities.Add(new RecentActivity { Description = "13 employees loaded", Amount = "—", Date = DateTime.Now.ToString("MMM dd, yyyy"), Status = "Info" });
-            RecentActivities.Add(new RecentActivity { Description = "3 departments active", Amount = "—", Date = DateTime.Now.ToString("MMM dd, yyyy"), Status = "Info" });
+            var recent = DemoDatabase.PayrollHistory.OrderByDescending(p => p.PayrollDate).Take(10);
+            foreach (var r in recent)
+            {
+                RecentActivities.Add(new RecentActivity 
+                { 
+                    Description = $"Payroll processed for {r.EmployeeName}", 
+                    Amount = $"₱{r.NetPayRaw:N2}", 
+                    Date = r.PayrollDateFormatted, 
+                    Status = r.Status 
+                });
+            }
+
+            if (RecentActivities.Count == 0)
+            {
+                RecentActivities.Add(new RecentActivity { Description = "System initialized", Amount = "—", Date = DateTime.Now.ToString("MMM dd, yyyy"), Status = "Info" });
+            }
         }
     }
 

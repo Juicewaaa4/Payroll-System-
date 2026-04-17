@@ -79,7 +79,7 @@
 
                                 <DataGridTextColumn Header="EMP. #" Binding="{Binding Record.EmpNumber}" Width="100"/>
                                 <DataGridTextColumn Header="Employee Name" Binding="{Binding Record.EmployeeName}" Width="*"/>
-                                <DataGridTextColumn Header="Payroll Date" Binding="{Binding Record.PayrollDateFormatted}" Width="120"/>
+                                <DataGridTextColumn Header="Payroll Date" Binding="{Binding Record.PayrollDateFormatted}" Width="145"/>
                                 <DataGridTextColumn Header="Gross Pay" Binding="{Binding Record.GrossSalary}" Width="110"/>
                                 <DataGridTextColumn Header="Net Pay" Binding="{Binding Record.NetPay}" Width="110">
                                     <DataGridTextColumn.ElementStyle>
@@ -89,11 +89,59 @@
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
                                 </DataGridTextColumn>
-                                <DataGridTemplateColumn Header="Action" Width="80">
+                                <DataGridTemplateColumn Header="Status" Width="90">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Content="✏️ Edit" Command="{Binding DataContext.EditRecordCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                    CommandParameter="{Binding}" Foreground="#1976D2" Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+                                            <TextBlock Text="{Binding Record.Status}" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#4CAF50"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                        <Setter Property="FontSize" Value="12"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Record.Status}" Value="Pending">
+                                                                <Setter Property="Foreground" Value="#FF9800"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Record.Status}" Value="Paid">
+                                                                <Setter Property="Foreground" Value="#2E7D32"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Action" Width="170">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Content="✏️ Edit" Command="{Binding DataContext.EditRecordCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}" Foreground="#1976D2" Background="Transparent" BorderThickness="0" 
+                                                        Cursor="Hand" FontSize="12" Padding="6,3"/>
+                                                
+                                                <Button Command="{Binding DataContext.ApproveRecordCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}" Cursor="Hand" Margin="4,0,0,0">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Setter Property="Background" Value="#E8F5E9"/>
+                                                            <Setter Property="Foreground" Value="#2E7D32"/>
+                                                            <Setter Property="BorderBrush" Value="#81C784"/>
+                                                            <Setter Property="BorderThickness" Value="1"/>
+                                                            <Setter Property="Padding" Value="8,3"/>
+                                                            <Setter Property="FontSize" Value="11"/>
+                                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                                            <Setter Property="Content" Value="✅ Approve"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Record.Status}" Value="Pending">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -106,7 +154,7 @@
 
         <!-- ═══ EDIT RECORD MODAL ═══ -->
         <Border Background="#80000000" Visibility="{Binding IsEditModalVisible, Converter={StaticResource BoolToVisConverter}}">
-            <Border Background="White" CornerRadius="12" Padding="32" Width="400" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border Background="White" CornerRadius="12" Padding="32" Width="500" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
                     <TextBlock Text="Edit Payroll Record" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
                     <TextBlock Text="{Binding EditTargetName}" FontSize="13" Foreground="#757575" Margin="0,0,0,20"/>
@@ -114,11 +162,49 @@
                     <TextBlock Text="GROSS SALARY (RAW)" Style="{StaticResource FieldLabel}"/>
                     <TextBox Text="{Binding EditGross, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,12"/>
                     
-                    <TextBlock Text="TOTAL DEDUCTIONS (RAW)" Style="{StaticResource FieldLabel}"/>
-                    <TextBox Text="{Binding EditDeductions, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,12"/>
-                    
-                    <TextBlock Text="NET PAY (RAW)" Style="{StaticResource FieldLabel}"/>
-                    <TextBox Text="{Binding EditNetPay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,24"/>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="SSS" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditSss, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,8"/>
+                            <TextBlock Text="PhilHealth" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditPhilhealth, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Late" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditLate, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Others" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditOthers, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="PAG-IBIG" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditPagibig, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Loan" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditLoan, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Undertime" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditUndertime, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="TOTAL DEDUCTIONS" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditDeductions, Mode=OneWay}" IsReadOnly="True" Background="#F0F0F0" Style="{StaticResource ModernTextBox}" Margin="0,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="NET PAY" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding EditNetPay, Mode=OneWay}" IsReadOnly="True" Background="#F0F0F0" Style="{StaticResource ModernTextBox}" Margin="0,0,0,0"/>
+                        </StackPanel>
+                    </Grid>
 
                     <Grid>
                         <Grid.ColumnDefinitions>

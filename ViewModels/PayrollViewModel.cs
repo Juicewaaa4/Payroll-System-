@@ -248,7 +248,7 @@ namespace PayrollSystem.ViewModels
                     using var cmd = new MySqlCommand(@"INSERT INTO payroll
                         (employee_id, payroll_date, period_start, period_end, work_days, overtime_hours, holiday_hours,
                          basic_salary, overtime_pay, holiday_pay, allowance, bonus, gross_salary, total_deductions, net_pay, status)
-                        VALUES (@eid, NOW(), @ps, @pe, @wd, @ot, @hol, @basic, @otpay, @holpay, @allow, @bon, @gross, @ded, @net, 'Processed')", conn);
+                        VALUES (@eid, NOW(), @ps, @pe, @wd, @ot, @hol, @basic, @otpay, @holpay, @allow, @bon, @gross, @ded, @net, 'Pending')", conn);
 
                     cmd.Parameters.AddWithValue("@eid", SelectedEmployee.Id);
                     cmd.Parameters.AddWithValue("@ps", PeriodStart);
@@ -284,7 +284,7 @@ namespace PayrollSystem.ViewModels
                     EmployeeName = SelectedEmployee.FullName,
                     EmpNumber = SelectedEmployee.EmpNumber,
                     PayrollDate = now,
-                    PayrollDateFormatted = now.ToString("MMM dd, yyyy  hh:mm tt"),
+                    PayrollDateFormatted = now.ToString("MMM dd, yyyy  h:mm tt"),
                     WorkDays = days,
                     PeriodStart = PeriodStart,
                     PeriodEnd = PeriodEnd,
@@ -298,7 +298,7 @@ namespace PayrollSystem.ViewModels
                     Deductions = $"₱{totalDed:N2}",
                     NetPayRaw = net,
                     NetPay = $"₱{net:N2}",
-                    Status = "Processed",
+                    Status = "Pending",
                     Sss = sss,
                     Pagibig = pagibig,
                     Philhealth = phil,
@@ -308,7 +308,7 @@ namespace PayrollSystem.ViewModels
                     Others = others
                 });
 
-                StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2}";
+                StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2} (Pending Approval)";
             }
             catch (Exception ex)
             {

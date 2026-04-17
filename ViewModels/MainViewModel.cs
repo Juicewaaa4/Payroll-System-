@@ -104,32 +104,17 @@ namespace PayrollSystem.ViewModels
                 _ => _dashboardViewModel
             };
 
-            // Load data on background thread to avoid UI freeze
-            Task.Run(() =>
+            // Load data directly — lightweight offline ops, no need for background thread
+            switch (page)
             {
-                switch (page)
-                {
-                    case "Dashboard": _dashboardViewModel.LoadData(); break;
-                    case "Employees":
-                        Application.Current.Dispatcher.Invoke(() => _employeeViewModel.LoadEmployees());
-                        break;
-                    case "Payroll":
-                        Application.Current.Dispatcher.Invoke(() => _payrollViewModel.LoadData());
-                        break;
-                    case "Payslip":
-                        Application.Current.Dispatcher.Invoke(() => _payslipViewModel.LoadEmployees());
-                        break;
-                    case "BatchPrint":
-                        Application.Current.Dispatcher.Invoke(() => _batchPrintViewModel.LoadData());
-                        break;
-                    case "Reports":
-                        Application.Current.Dispatcher.Invoke(() => _reportsViewModel.LoadData());
-                        break;
-                    case "Settings":
-                        Application.Current.Dispatcher.Invoke(() => _settingsViewModel.LoadData());
-                        break;
-                }
-            });
+                case "Dashboard": _dashboardViewModel.LoadData(); break;
+                case "Employees": _employeeViewModel.LoadEmployees(); break;
+                case "Payroll": _payrollViewModel.LoadData(); break;
+                case "Payslip": _payslipViewModel.LoadEmployees(); break;
+                case "BatchPrint": _batchPrintViewModel.LoadData(); break;
+                case "Reports": _reportsViewModel.LoadData(); break;
+                case "Settings": _settingsViewModel.LoadData(); break;
+            }
         }
 
         private void Logout()

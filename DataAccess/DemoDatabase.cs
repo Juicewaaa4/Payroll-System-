@@ -165,8 +165,10 @@ namespace PayrollSystem.DataAccess
         public string Description { get; set; } = "";
     }
 
-    public class PayrollHistoryRecord
+    public class PayrollHistoryRecord : System.ComponentModel.INotifyPropertyChanged
     {
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
         public int Id { get; set; }
         public string EmployeeName { get; set; } = "";
         public string EmpNumber { get; set; } = "";
@@ -178,7 +180,20 @@ namespace PayrollSystem.DataAccess
         public string Deductions { get; set; } = "";
         public decimal NetPayRaw { get; set; }
         public string NetPay { get; set; } = "";
-        public string Status { get; set; } = "Processed";
+
+        private string _status = "Processed";
+        public string Status 
+        { 
+            get => _status; 
+            set 
+            { 
+                if (_status != value) 
+                { 
+                    _status = value; 
+                    PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(Status))); 
+                } 
+            } 
+        }
         
         // Processing Parameters
         public int WorkDays { get; set; }
