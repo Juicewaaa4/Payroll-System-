@@ -30,9 +30,9 @@
 
                 <StackPanel HorizontalAlignment="Center">
                     <!-- Logo -->
-                    <Border Width="80" Height="80" CornerRadius="40" Background="#FFFFFF30"
+                    <Border Width="90" Height="90" CornerRadius="45" Background="#FFFFFF30"
                             HorizontalAlignment="Center" Margin="0,0,0,14">
-                        <Image Source="/Logo/Payroll Icon.png" Width="52" Height="52" 
+                        <Image Source="/Logo/Payroll Icon.png" Width="90" Height="90" 
                                HorizontalAlignment="Center" VerticalAlignment="Center" 
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
@@ -198,23 +198,10 @@
                                FontFamily="{StaticResource HeadingFont}"/>
                 </Button>
 
-                <!-- Footer -->
-                <StackPanel Margin="0,20,0,0" HorizontalAlignment="Center">
-                    <Border Background="#F5F5F5" CornerRadius="6" Padding="14,7">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔑" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock FontSize="11" Foreground="#757575" VerticalAlignment="Center">
-                                <Run Text="Default: "/>
-                                <Run Text="admin" FontWeight="SemiBold" Foreground="#25BD6A"/>
-                                <Run Text=" / "/>
-                                <Run Text="admin123" FontWeight="SemiBold" Foreground="#25BD6A"/>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-                    <!-- Developer Credit -->
-                    <TextBlock Text="Developed by Lloyd Joshua De Lara" FontSize="10" Foreground="#BDBDBD" 
-                               HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                </StackPanel>
+                <!-- Developer Credit -->
+                <TextBlock Text="Developed by Lloyd Joshua De Lara" FontSize="12" Foreground="#757575" 
+                           HorizontalAlignment="Center" Margin="0,24,0,0" FontWeight="Medium"
+                           FontFamily="{StaticResource PrimaryFont}"/>
 
             </StackPanel>
         </Grid>
