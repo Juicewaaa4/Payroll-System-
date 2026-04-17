@@ -11,7 +11,10 @@ namespace PayrollSystem.ViewModels
         private string _errorMessage = "";
         private bool _isLoading;
         private bool _rememberMe;
+        private string _lastAttemptedPassword = "";
         private readonly string _settingsPath;
+
+        public string RememberedPassword { get; private set; } = "";
 
         public string Username
         {
@@ -62,6 +65,10 @@ namespace PayrollSystem.ViewModels
                     {
                         RememberMe = true;
                         Username = lines[1];
+                        if (lines.Length >= 3)
+                        {
+                            try { RememberedPassword = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(lines[2])); } catch {}
+                        }
                     }
                 }
             }
@@ -77,7 +84,10 @@ namespace PayrollSystem.ViewModels
                     System.IO.Directory.CreateDirectory(dir!);
 
                 if (RememberMe)
-                    System.IO.File.WriteAllLines(_settingsPath, new[] { "1", Username });
+                {
+                    var pass64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(_lastAttemptedPassword));
+                    System.IO.File.WriteAllLines(_settingsPath, new[] { "1", Username, pass64 });
+                }
                 else if (System.IO.File.Exists(_settingsPath))
                     System.IO.File.Delete(_settingsPath);
             }
@@ -95,6 +105,7 @@ namespace PayrollSystem.ViewModels
             }
 
             var password = parameter as string ?? "";
+            _lastAttemptedPassword = password;
             if (string.IsNullOrWhiteSpace(password))
             {
                 ErrorMessage = "Please enter your password.";

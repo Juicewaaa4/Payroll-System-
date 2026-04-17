@@ -19,6 +19,12 @@ namespace PayrollSystem.Views
             _viewModel.LoginSuccessful += OnLoginSuccessful;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             DataContext = _viewModel;
+
+            if (_viewModel.RememberMe)
+            {
+                PasswordBox.Password = _viewModel.RememberedPassword;
+            }
+
             UsernameBox.Focus();
         }
 
