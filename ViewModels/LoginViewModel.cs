@@ -10,6 +10,8 @@ namespace PayrollSystem.ViewModels
         private string _username = "";
         private string _errorMessage = "";
         private bool _isLoading;
+        private bool _rememberMe;
+        private readonly string _settingsPath;
 
         public string Username
         {
@@ -29,6 +31,12 @@ namespace PayrollSystem.ViewModels
             set => SetProperty(ref _isLoading, value);
         }
 
+        public bool RememberMe
+        {
+            get => _rememberMe;
+            set => SetProperty(ref _rememberMe, value);
+        }
+
         public ICommand LoginCommand { get; }
 
         // Event to signal successful login
@@ -37,6 +45,43 @@ namespace PayrollSystem.ViewModels
         public LoginViewModel()
         {
             LoginCommand = new RelayCommand(ExecuteLogin);
+            
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            _settingsPath = System.IO.Path.Combine(appData, "PayrollSystem", "remember.txt");
+            LoadRememberedUser();
+        }
+
+        private void LoadRememberedUser()
+        {
+            try
+            {
+                if (System.IO.File.Exists(_settingsPath))
+                {
+                    var lines = System.IO.File.ReadAllLines(_settingsPath);
+                    if (lines.Length >= 2 && lines[0] == "1")
+                    {
+                        RememberMe = true;
+                        Username = lines[1];
+                    }
+                }
+            }
+            catch { /* Ignore if it fails */ }
+        }
+
+        private void SaveRememberedUser()
+        {
+            try
+            {
+                var dir = System.IO.Path.GetDirectoryName(_settingsPath);
+                if (!System.IO.Directory.Exists(dir))
+                    System.IO.Directory.CreateDirectory(dir!);
+
+                if (RememberMe)
+                    System.IO.File.WriteAllLines(_settingsPath, new[] { "1", Username });
+                else if (System.IO.File.Exists(_settingsPath))
+                    System.IO.File.Delete(_settingsPath);
+            }
+            catch { /* Ignore if it fails */ }
         }
 
         public void ExecuteLogin(object? parameter)
@@ -76,6 +121,7 @@ namespace PayrollSystem.ViewModels
                     {
                         var fullName = reader.GetString("full_name");
                         var role = reader.GetString("role");
+                        SaveRememberedUser();
                         LoginSuccessful?.Invoke(fullName, role);
                         return;
                     }
@@ -86,6 +132,7 @@ namespace PayrollSystem.ViewModels
                 var dbUser = DemoDatabase.Users.FirstOrDefault(u => u.Username == Username && u.PasswordHash == password && u.IsActive);
                 if (dbUser != null)
                 {
+                    SaveRememberedUser();
                     LoginSuccessful?.Invoke(dbUser.FullName, dbUser.Role);
                     return;
                 }
@@ -99,6 +146,7 @@ namespace PayrollSystem.ViewModels
                 var demoUser = DemoDatabase.Users.FirstOrDefault(u => u.Username == Username && u.PasswordHash == password && u.IsActive);
                 if (demoUser != null)
                 {
+                    SaveRememberedUser();
                     LoginSuccessful?.Invoke(demoUser.FullName, demoUser.Role);
                     return;
                 }
