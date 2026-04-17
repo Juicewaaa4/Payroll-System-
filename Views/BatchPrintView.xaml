@@ -212,9 +212,9 @@
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CancelEditCommand}"
+                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CancelEditCommand}" IsCancel="True"
                                 Background="White" BorderBrush="#E0E0E0" BorderThickness="1" Cursor="Hand" Padding="0,11" Foreground="#757575"/>
-                        <Button Grid.Column="2" Content="💾 Save" Command="{Binding SaveEditCommand}"
+                        <Button Grid.Column="2" Content="💾 Save" Command="{Binding SaveEditCommand}" IsDefault="True"
                                 Background="{StaticResource PrimaryBrush}" Foreground="White" Cursor="Hand" Padding="0,11" FontWeight="SemiBold"/>
                     </Grid>
                 </StackPanel>

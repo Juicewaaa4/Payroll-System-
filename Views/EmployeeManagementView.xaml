@@ -244,7 +244,7 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- Cancel Button -->
-                            <Button Grid.Column="0" Command="{Binding CancelFormCommand}" Cursor="Hand">
+                            <Button Grid.Column="0" Command="{Binding CancelFormCommand}" Cursor="Hand" IsCancel="True">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <Border x:Name="cancelBg" Background="White" CornerRadius="8"
@@ -264,7 +264,7 @@
                             </Button>
 
                             <!-- Save Button -->
-                            <Button Grid.Column="2" Command="{Binding SaveEmployeeCommand}" Cursor="Hand">
+                            <Button Grid.Column="2" Command="{Binding SaveEmployeeCommand}" Cursor="Hand" IsDefault="True">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <Border x:Name="saveBg" Background="{StaticResource PrimaryBrush}"

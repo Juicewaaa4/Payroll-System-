@@ -159,9 +159,9 @@
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CancelUserCommand}"
+                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CancelUserCommand}" IsCancel="True"
                                 Background="White" BorderBrush="#E0E0E0" BorderThickness="1" Cursor="Hand" Padding="0,11" Foreground="#757575"/>
-                        <Button Grid.Column="2" Content="💾 Save" Command="{Binding SaveUserCommand}"
+                        <Button Grid.Column="2" Content="💾 Save" Command="{Binding SaveUserCommand}" IsDefault="True"
                                 Background="{StaticResource PrimaryBrush}" Foreground="White" Cursor="Hand" Padding="0,11" FontWeight="SemiBold"/>
                     </Grid>
                 </StackPanel>
@@ -186,9 +186,9 @@
                             <ColumnDefinition Width="10"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CancelDeptCommand}"
+                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CancelDeptCommand}" IsCancel="True"
                                 Background="White" BorderBrush="#E0E0E0" BorderThickness="1" Cursor="Hand" Padding="0,11" Foreground="#757575"/>
-                        <Button Grid.Column="2" Content="💾 Save" Command="{Binding SaveDeptCommand}"
+                        <Button Grid.Column="2" Content="💾 Save" Command="{Binding SaveDeptCommand}" IsDefault="True"
                                 Background="{StaticResource PrimaryBrush}" Foreground="White" Cursor="Hand" Padding="0,11" FontWeight="SemiBold"/>
                     </Grid>
                 </StackPanel>
