@@ -63,7 +63,7 @@
                                         <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="150"/>
                                         <DataGridTextColumn Header="Name" Binding="{Binding FullName}" Width="*"/>
                                         <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="120"/>
-                                        <DataGridTemplateColumn Header="Action" Width="130">
+                                        <DataGridTemplateColumn Header="Action" Width="160">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal">
@@ -111,7 +111,7 @@
                                         <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
                                         <DataGridTextColumn Header="Department Name" Binding="{Binding Name}" Width="200"/>
                                         <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*"/>
-                                        <DataGridTemplateColumn Header="Action" Width="130">
+                                        <DataGridTemplateColumn Header="Action" Width="160">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal">

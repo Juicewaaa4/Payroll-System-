@@ -318,31 +318,39 @@ namespace PayrollSystem.ViewModels
             int SharedStr(string s) { if (!sharedStrings.Contains(s)) sharedStrings.Add(s); return sharedStrings.IndexOf(s); }
 
             var rows = new StringBuilder();
+            
+            // Header Info for Professional Look
+            rows.Append("<row r=\"1\"><c r=\"A1\" t=\"s\" s=\"1\"><v>" + SharedStr("Zoey's Billiard House - Payroll Report") + "</v></c></row>");
+            rows.Append("<row r=\"2\">");
+            rows.Append("<c r=\"A2\" t=\"s\" s=\"2\"><v>" + SharedStr($"Period: {StartDate:MMM dd yyyy} to {EndDate:MMM dd yyyy}") + "</v></c>");
+            rows.Append("</row>");
+            rows.Append("<row r=\"3\"></row>");
+
             string[] headers = { "EMP #", "Employee Name", "Date", "Gross Salary", "SSS", "PAG-IBIG", "PhilHealth", "Total Deductions", "Net Pay", "Status" };
-            rows.Append("<row r=\"1\">");
+            rows.Append("<row r=\"4\">");
             for (int i = 0; i < headers.Length; i++)
             {
                 var col = (char)('A' + i);
-                rows.Append($"<c r=\"{col}1\" t=\"s\"><v>{SharedStr(headers[i])}</v></c>");
+                rows.Append($"<c r=\"{col}4\" t=\"s\" s=\"3\"><v>{SharedStr(headers[i])}</v></c>");
             }
             rows.Append("</row>");
 
             decimal totalGross = 0, totalSss = 0, totalPag = 0, totalPhil = 0, totalDed = 0, totalNet = 0;
-            int rowNum = 2;
+            int rowNum = 5;
 
             foreach (var rec in _allPayrollRecords)
             {
                 rows.Append($"<row r=\"{rowNum}\">");
-                rows.Append($"<c r=\"A{rowNum}\" t=\"s\"><v>{SharedStr(rec.EmpNumber)}</v></c>");
-                rows.Append($"<c r=\"B{rowNum}\" t=\"s\"><v>{SharedStr(rec.EmployeeName)}</v></c>");
-                rows.Append($"<c r=\"C{rowNum}\" t=\"s\"><v>{SharedStr(rec.PayrollDate)}</v></c>");
-                rows.Append($"<c r=\"D{rowNum}\"><v>{rec.GrossRaw}</v></c>");
-                rows.Append($"<c r=\"E{rowNum}\"><v>{rec.Sss}</v></c>");
-                rows.Append($"<c r=\"F{rowNum}\"><v>{rec.Pagibig}</v></c>");
-                rows.Append($"<c r=\"G{rowNum}\"><v>{rec.Philhealth}</v></c>");
-                rows.Append($"<c r=\"H{rowNum}\"><v>{rec.DeductionsRaw}</v></c>");
-                rows.Append($"<c r=\"I{rowNum}\"><v>{rec.NetPayRaw}</v></c>");
-                rows.Append($"<c r=\"J{rowNum}\" t=\"s\"><v>{SharedStr(rec.Status)}</v></c>");
+                rows.Append($"<c r=\"A{rowNum}\" t=\"s\" s=\"4\"><v>{SharedStr(rec.EmpNumber)}</v></c>");
+                rows.Append($"<c r=\"B{rowNum}\" t=\"s\" s=\"4\"><v>{SharedStr(rec.EmployeeName)}</v></c>");
+                rows.Append($"<c r=\"C{rowNum}\" t=\"s\" s=\"4\"><v>{SharedStr(rec.PayrollDate)}</v></c>");
+                rows.Append($"<c r=\"D{rowNum}\" s=\"5\"><v>{rec.GrossRaw}</v></c>");
+                rows.Append($"<c r=\"E{rowNum}\" s=\"5\"><v>{rec.Sss}</v></c>");
+                rows.Append($"<c r=\"F{rowNum}\" s=\"5\"><v>{rec.Pagibig}</v></c>");
+                rows.Append($"<c r=\"G{rowNum}\" s=\"5\"><v>{rec.Philhealth}</v></c>");
+                rows.Append($"<c r=\"H{rowNum}\" s=\"5\"><v>{rec.DeductionsRaw}</v></c>");
+                rows.Append($"<c r=\"I{rowNum}\" s=\"5\"><v>{rec.NetPayRaw}</v></c>");
+                rows.Append($"<c r=\"J{rowNum}\" t=\"s\" s=\"4\"><v>{SharedStr(rec.Status)}</v></c>");
                 rows.Append("</row>");
                 totalGross += rec.GrossRaw; totalSss += rec.Sss; totalPag += rec.Pagibig;
                 totalPhil += rec.Philhealth; totalDed += rec.DeductionsRaw; totalNet += rec.NetPayRaw;
@@ -350,25 +358,67 @@ namespace PayrollSystem.ViewModels
             }
 
             rows.Append($"<row r=\"{rowNum}\">");
-            rows.Append($"<c r=\"C{rowNum}\" t=\"s\"><v>{SharedStr("TOTALS")}</v></c>");
-            rows.Append($"<c r=\"D{rowNum}\"><v>{totalGross}</v></c>");
-            rows.Append($"<c r=\"E{rowNum}\"><v>{totalSss}</v></c>");
-            rows.Append($"<c r=\"F{rowNum}\"><v>{totalPag}</v></c>");
-            rows.Append($"<c r=\"G{rowNum}\"><v>{totalPhil}</v></c>");
-            rows.Append($"<c r=\"H{rowNum}\"><v>{totalDed}</v></c>");
-            rows.Append($"<c r=\"I{rowNum}\"><v>{totalNet}</v></c>");
+            rows.Append($"<c r=\"C{rowNum}\" t=\"s\" s=\"6\"><v>{SharedStr("TOTALS")}</v></c>");
+            rows.Append($"<c r=\"D{rowNum}\" s=\"7\"><v>{totalGross}</v></c>");
+            rows.Append($"<c r=\"E{rowNum}\" s=\"7\"><v>{totalSss}</v></c>");
+            rows.Append($"<c r=\"F{rowNum}\" s=\"7\"><v>{totalPag}</v></c>");
+            rows.Append($"<c r=\"G{rowNum}\" s=\"7\"><v>{totalPhil}</v></c>");
+            rows.Append($"<c r=\"H{rowNum}\" s=\"7\"><v>{totalDed}</v></c>");
+            rows.Append($"<c r=\"I{rowNum}\" s=\"7\"><v>{totalNet}</v></c>");
             rows.Append("</row>");
 
+            var sheetData = $"<sheetData>{rows}</sheetData>";
+            var cols = "<cols><col min=\"1\" max=\"1\" width=\"15\" customWidth=\"1\"/><col min=\"2\" max=\"2\" width=\"28\" customWidth=\"1\"/><col min=\"3\" max=\"3\" width=\"20\" customWidth=\"1\"/><col min=\"4\" max=\"9\" width=\"15\" customWidth=\"1\"/><col min=\"10\" max=\"10\" width=\"12\" customWidth=\"1\"/></cols>";
+            var sheetXml = $@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+<worksheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">{cols}{sheetData}</worksheet>";
+
             var ssXml = new StringBuilder();
-            ssXml.Append($"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{sharedStrings.Count}\" uniqueCount=\"{sharedStrings.Count}\">");
-            foreach (var s in sharedStrings) ssXml.Append($"<si><t>{System.Security.SecurityElement.Escape(s)}</t></si>");
+            ssXml.Append(@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?><sst xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"" count=""" + sharedStrings.Count + @""" uniqueCount=""" + sharedStrings.Count + @""">");
+            foreach (var s in sharedStrings)
+            {
+                var escaped = System.Security.SecurityElement.Escape(s) ?? "";
+                ssXml.Append($"<si><t>{escaped}</t></si>");
+            }
             ssXml.Append("</sst>");
 
-            var sheetXml = $@"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
-<worksheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">
-<cols><col min=""1"" max=""1"" width=""12""/><col min=""2"" max=""2"" width=""28""/><col min=""3"" max=""3"" width=""22""/>
-<col min=""4"" max=""9"" width=""14""/><col min=""10"" max=""10"" width=""12""/></cols>
-<sheetData>{rows}</sheetData></worksheet>";
+            var styles = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
+<styleSheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">
+  <numFmts count=""1"">
+    <numFmt numFmtId=""164"" formatCode=""_(&quot;₱&quot;* #,##0.00_);_(&quot;₱&quot;* \(#,##0.00\);_(&quot;₱&quot;* &quot;-&quot;??_);_(@_)""/>
+  </numFmts>
+  <fonts count=""4"">
+    <font><sz val=""11""/><name val=""Calibri""/></font>
+    <font><b/><sz val=""14""/><color rgb=""FF1B5E20""/><name val=""Calibri""/></font>
+    <font><b/><sz val=""12""/><name val=""Calibri""/></font>
+    <font><b/><sz val=""11""/><color rgb=""FFFFFFFF""/><name val=""Calibri""/></font>
+  </fonts>
+  <fills count=""4"">
+    <fill><patternFill patternType=""none""/></fill>
+    <fill><patternFill patternType=""gray125""/></fill>
+    <fill><patternFill patternType=""solid""><fgColor rgb=""FF2E7D32""/><bgColor indexed=""64""/></patternFill></fill>
+    <fill><patternFill patternType=""solid""><fgColor rgb=""FFF2F2F2""/><bgColor indexed=""64""/></patternFill></fill>
+  </fills>
+  <borders count=""2"">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style=""thin""><color rgb=""FFDDDDDD""/></left>
+      <right style=""thin""><color rgb=""FFDDDDDD""/></right>
+      <top style=""thin""><color rgb=""FFDDDDDD""/></top>
+      <bottom style=""thin""><color rgb=""FFDDDDDD""/></bottom>
+      <diagonal/>
+    </border>
+  </borders>
+  <cellXfs count=""8"">
+    <xf numFmtId=""0"" fontId=""0"" fillId=""0"" borderId=""0"" xfId=""0""/>
+    <xf numFmtId=""0"" fontId=""1"" fillId=""0"" borderId=""0"" xfId=""0"" applyFont=""1""/>
+    <xf numFmtId=""0"" fontId=""2"" fillId=""0"" borderId=""0"" xfId=""0"" applyFont=""1""/>
+    <xf numFmtId=""0"" fontId=""3"" fillId=""2"" borderId=""1"" xfId=""0"" applyFont=""1"" applyFill=""1"" applyBorder=""1""/>
+    <xf numFmtId=""0"" fontId=""0"" fillId=""0"" borderId=""1"" xfId=""0"" applyBorder=""1""/>
+    <xf numFmtId=""164"" fontId=""0"" fillId=""0"" borderId=""1"" xfId=""0"" applyNumberFormat=""1"" applyBorder=""1""/>
+    <xf numFmtId=""0"" fontId=""2"" fillId=""3"" borderId=""1"" xfId=""0"" applyFont=""1"" applyFill=""1"" applyBorder=""1""/>
+    <xf numFmtId=""164"" fontId=""2"" fillId=""3"" borderId=""1"" xfId=""0"" applyNumberFormat=""1"" applyFont=""1"" applyFill=""1"" applyBorder=""1""/>
+  </cellXfs>
+</styleSheet>";
 
             var contentTypes = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
 <Types xmlns=""http://schemas.openxmlformats.org/package/2006/content-types"">
@@ -377,6 +427,7 @@ namespace PayrollSystem.ViewModels
 <Override PartName=""/xl/workbook.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml""/>
 <Override PartName=""/xl/worksheets/sheet1.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml""/>
 <Override PartName=""/xl/sharedStrings.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml""/>
+<Override PartName=""/xl/styles.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml""/>
 </Types>";
 
             var rels = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
@@ -388,6 +439,7 @@ namespace PayrollSystem.ViewModels
 <Relationships xmlns=""http://schemas.openxmlformats.org/package/2006/relationships"">
 <Relationship Id=""rId1"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"" Target=""worksheets/sheet1.xml""/>
 <Relationship Id=""rId2"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"" Target=""sharedStrings.xml""/>
+<Relationship Id=""rId3"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"" Target=""styles.xml""/>
 </Relationships>";
 
             var workbook = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
@@ -401,6 +453,7 @@ namespace PayrollSystem.ViewModels
             WriteEntry(zip, "xl/workbook.xml", workbook);
             WriteEntry(zip, "xl/_rels/workbook.xml.rels", workbookRels);
             WriteEntry(zip, "xl/worksheets/sheet1.xml", sheetXml);
+            WriteEntry(zip, "xl/styles.xml", styles);
             WriteEntry(zip, "xl/sharedStrings.xml", ssXml.ToString());
         }
 

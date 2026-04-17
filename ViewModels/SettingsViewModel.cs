@@ -210,6 +210,14 @@ namespace PayrollSystem.ViewModels
             if (user == null) return;
             if (user.Username.ToLower() == "admin") { StatusMessage = "Cannot delete the default admin account."; return; }
 
+            var result = System.Windows.MessageBox.Show(
+                $"Are you sure you want to delete the user account '{user.Username}'?",
+                "Confirm Delete",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+
+            if (result != System.Windows.MessageBoxResult.Yes) return;
+
             try
             {
                 if (DatabaseHelper.TestConnection())
@@ -329,6 +337,15 @@ namespace PayrollSystem.ViewModels
         private void DeleteDepartment(DepartmentItem? dept)
         {
             if (dept == null) return;
+
+            var result = System.Windows.MessageBox.Show(
+                $"Are you sure you want to delete the department '{dept.Name}'?",
+                "Confirm Delete",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+
+            if (result != System.Windows.MessageBoxResult.Yes) return;
+
             try
             {
                 if (DatabaseHelper.TestConnection())

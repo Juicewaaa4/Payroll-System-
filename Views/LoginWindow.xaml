@@ -18,24 +18,14 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- ═══ HEADER with gradient ═══ -->
-            <Border Grid.Row="0" CornerRadius="16,16,0,0" Padding="0,32,0,28">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#138A49" Offset="0"/>
-                        <GradientStop Color="#25BD6A" Offset="0.5"/>
-                        <GradientStop Color="#42D480" Offset="1"/>
-                    </LinearGradientBrush>
-                </Border.Background>
+            <!-- ═══ HEADER ═══ -->
+            <Border Grid.Row="0" CornerRadius="16,16,0,0" Padding="0,32,0,28" Background="#138A49">
 
                 <StackPanel HorizontalAlignment="Center">
                     <!-- Logo -->
-                    <Border Width="90" Height="90" CornerRadius="45" Background="#FFFFFF30"
-                            HorizontalAlignment="Center" Margin="0,0,0,14">
-                        <Image Source="/Logo/Payroll Icon.png" Width="90" Height="90" 
-                               HorizontalAlignment="Center" VerticalAlignment="Center" 
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </Border>
+                    <Image Source="/Logo/Payroll Icon.png" Width="100" Height="100" 
+                           HorizontalAlignment="Center" Margin="0,0,0,14"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
                     <TextBlock Text="P A Y R O L L   S Y S T E M" FontSize="18" FontWeight="Bold" Foreground="White"
                                HorizontalAlignment="Center" FontFamily="{StaticResource HeadingFont}"/>
                     <TextBlock Text="Enterprise Management Platform" FontSize="11" Foreground="#B2DFDB"
@@ -159,7 +149,7 @@
                 </DockPanel>
 
                 <!-- Sign In Button -->
-                <Button Click="LoginButton_Click" Height="46"
+                <Button Click="LoginButton_Click" Height="46" IsDefault="True"
                         FontSize="14" FontWeight="Bold" Cursor="Hand" x:Name="SignInBtn">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
