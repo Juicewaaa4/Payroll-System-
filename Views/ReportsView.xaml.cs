@@ -15,7 +15,7 @@ namespace PayrollSystem.Views
             if (header != null && header.Content != null)
             {
                 var columnStr = header.Content.ToString();
-                if (DataContext is ViewModels.ReportsViewModel vm)
+                if (columnStr != null && DataContext is ViewModels.ReportsViewModel vm)
                 {
                     vm.SortData(columnStr);
                 }
