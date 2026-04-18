@@ -552,8 +552,13 @@ namespace PayrollSystem.ViewModels
                 signTable.Columns.Add(new System.Windows.Documents.TableColumn());
                 var signRg = new System.Windows.Documents.TableRowGroup();
                 var signRow = new System.Windows.Documents.TableRow();
-                signRow.Cells.Add(new System.Windows.Documents.TableCell(new System.Windows.Documents.Paragraph(new System.Windows.Documents.Run($"Prepared by:  _________________________"))) { TextAlignment = System.Windows.TextAlignment.Left });
-                signRow.Cells.Add(new System.Windows.Documents.TableCell(new System.Windows.Documents.Paragraph(new System.Windows.Documents.Run($"Approved by:  _________________________"))) { TextAlignment = System.Windows.TextAlignment.Right });
+                
+                string prep = string.IsNullOrWhiteSpace(PreparedBy) ? "_________________________" : PreparedBy;
+                string app = string.IsNullOrWhiteSpace(ApprovedBy) ? "_________________________" : ApprovedBy;
+
+                signRow.Cells.Add(new System.Windows.Documents.TableCell(new System.Windows.Documents.Paragraph(new System.Windows.Documents.Run($"Prepared by:  {prep}"))) { TextAlignment = System.Windows.TextAlignment.Left });
+                signRow.Cells.Add(new System.Windows.Documents.TableCell(new System.Windows.Documents.Paragraph(new System.Windows.Documents.Run($"Approved by:  {app}"))) { TextAlignment = System.Windows.TextAlignment.Right });
+                
                 signRg.Rows.Add(signRow);
                 signTable.RowGroups.Add(signRg);
                 doc.Blocks.Add(signTable);

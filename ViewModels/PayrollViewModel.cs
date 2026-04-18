@@ -162,19 +162,32 @@ namespace PayrollSystem.ViewModels
                 try
                 {
                     StatusMessage = "Parsing biometrics data. Please wait...";
-                    var summaries = Utilities.BiometricsParser.ParseExcelFile(dialog.FileName);
+                    var result = Utilities.BiometricsParser.ParseExcelFile(dialog.FileName);
 
                     _importedAttendance.Clear();
-                    foreach (var summary in summaries)
+                    foreach (var summary in result.Records)
                     {
                         if (!string.IsNullOrEmpty(summary.EmpNumber))
                             _importedAttendance[summary.EmpNumber] = summary;
                     }
 
-                    if (summaries.Count > 0)
-                        StatusMessage = $"✓ Successfully imported {summaries.Count} biometric records. Auto-computations ready.";
+                    if (result.Records.Count > 0)
+                    {
+                        StatusMessage = $"✓ Successfully imported {result.Records.Count} biometric records. Auto-computations ready.";
+                        
+                        // Automatically SNAP the Date Pickers to the Excel file's actual date range!
+                        if (result.StartDate.HasValue && result.EndDate.HasValue)
+                        {
+                            _isUpdatingDates = true; // Prevent loop
+                            PeriodStart = result.StartDate.Value;
+                            PeriodEnd = result.EndDate.Value;
+                            _isUpdatingDates = false;
+                        }
+                    }
                     else
+                    {
                         StatusMessage = "⚠️ No valid attendance records found. Ensure the Excel file contains the exact 'Attend. Report' format.";
+                    }
 
                     // Re-trigger calculation if an employee is currently selected
                     if (SelectedEmployee != null)
@@ -254,6 +267,12 @@ namespace PayrollSystem.ViewModels
                     WorkDays = defaultDays.ToString();
                     _isUpdatingDates = false;
                 }
+                else if (string.IsNullOrWhiteSpace(WorkDays))
+                {
+                    _isUpdatingDates = true;
+                    WorkDays = ((PeriodEnd - PeriodStart).Days + 1).ToString();
+                    _isUpdatingDates = false;
+                }
                 
                 OvertimeHours = totalOT.ToString();
 
@@ -277,6 +296,13 @@ namespace PayrollSystem.ViewModels
                 _undertimeDeduction = "0";
                 OnPropertyChanged(nameof(LateDeduction));
                 OnPropertyChanged(nameof(UndertimeDeduction));
+                
+                if (string.IsNullOrWhiteSpace(WorkDays))
+                {
+                    _isUpdatingDates = true;
+                    WorkDays = ((PeriodEnd - PeriodStart).Days + 1).ToString();
+                    _isUpdatingDates = false;
+                }
             }
         }
 

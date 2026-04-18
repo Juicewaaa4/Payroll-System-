@@ -35,9 +35,11 @@ namespace PayrollSystem.Utilities
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         }
 
-        public static List<AttendanceSummary> ParseExcelFile(string filePath)
+        public static (List<AttendanceSummary> Records, DateTime? StartDate, DateTime? EndDate) ParseExcelFile(string filePath)
         {
             var summaries = new List<AttendanceSummary>();
+            DateTime? parsedStart = null;
+            DateTime? parsedEnd = null;
 
             using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
             {
@@ -54,6 +56,23 @@ namespace PayrollSystem.Utilities
                             {
                                 string cellValue = table.Rows[r][c]?.ToString()?.Trim() ?? "";
                                 string normalizedCell = cellValue.Replace("\n", "").Replace("\r", "").Replace(" ", "").ToLower();
+
+                                // Extract Date Range (e.g. "Date 2026-04-01 ~ 2026-04-18")
+                                if (parsedStart == null && cellValue.StartsWith("Date", StringComparison.OrdinalIgnoreCase) && cellValue.Contains("~"))
+                                {
+                                    try 
+                                    {
+                                        string datePart = cellValue.Substring(cellValue.IndexOf("Date", StringComparison.OrdinalIgnoreCase) + 4).Trim();
+                                        datePart = datePart.Replace(":", "").Trim();
+                                        var parts = datePart.Split('~', StringSplitOptions.RemoveEmptyEntries);
+                                        if (parts.Length == 2)
+                                        {
+                                            if (DateTime.TryParse(parts[0].Trim(), out DateTime sDate)) parsedStart = sDate;
+                                            if (DateTime.TryParse(parts[1].Trim(), out DateTime eDate)) parsedEnd = eDate;
+                                        }
+                                    } 
+                                    catch { /* suppress extraction error */ }
+                                }
 
                                 // Identify the start of a data block
                                 if (normalizedCell == "date/week" || normalizedCell == "date")
@@ -258,7 +277,7 @@ namespace PayrollSystem.Utilities
                 }
             }
 
-            return summaries;
+            return (summaries, parsedStart, parsedEnd);
         }
     }
 }
