@@ -162,26 +162,68 @@ namespace PayrollSystem.Utilities
                                         int rUnder = 0;
                                         int rOT = 0;
 
-                                        // Evaluate Late (only if it's reasonably a morning/arrival punch, say before 3PM)
-                                        if (firstPunch > graceLimit && firstPunch < new TimeSpan(15, 0, 0))
+                                        // AUTO-DETECT SHIFT: If they punch in after 2:30 PM (or very early AM like 2:00 AM), it's Night Shift
+                                        bool isNightShift = firstPunch >= new TimeSpan(14, 30, 0) || firstPunch <= new TimeSpan(4, 0, 0);
+
+                                        if (!isNightShift)
                                         {
-                                            rLate = (int)(firstPunch - shiftStart).TotalMinutes;
-                                        }
-                                        
-                                        // Evaluate Undertime & OT (only if they have 2 punches or an Afternoon punch)
-                                        if (rowPunches.Count > 1 || lastPunch >= new TimeSpan(13, 0, 0)) // Post-lunch punch
-                                        {
-                                            if (lastPunch < shiftEnd)
+                                            // === ADMIN DAY SHIFT (8:30 AM to 5:30 PM) ===
+                                            // Evaluate Late (only if it's reasonably a morning/arrival punch, say before 2 PM)
+                                            if (firstPunch > graceLimit && firstPunch < new TimeSpan(14, 0, 0))
                                             {
-                                                rUnder = (int)(shiftEnd - lastPunch).TotalMinutes;
+                                                rLate = (int)(firstPunch - shiftStart).TotalMinutes;
                                             }
-                                            else if (lastPunch > shiftEnd)
+                                            
+                                            // Evaluate Undertime & OT (only if they have 2 punches or an Afternoon punch)
+                                            if (rowPunches.Count > 1 || lastPunch >= new TimeSpan(13, 0, 0)) // Post-lunch punch
                                             {
-                                                double otDuration = (lastPunch - shiftEnd).TotalHours;
-                                                int fullHours = (int)Math.Floor(otDuration);
-                                                
-                                                if (fullHours >= 1)
-                                                    rOT = Math.Min(fullHours, 3);
+                                                if (lastPunch < shiftEnd)
+                                                {
+                                                    rUnder = (int)(shiftEnd - lastPunch).TotalMinutes;
+                                                }
+                                                else if (lastPunch > shiftEnd)
+                                                {
+                                                    double otDuration = (lastPunch - shiftEnd).TotalHours;
+                                                    int fullHours = (int)Math.Floor(otDuration);
+                                                    
+                                                    if (fullHours >= 1)
+                                                        rOT = Math.Min(fullHours, 3);
+                                                }
+                                            }
+                                        }
+                                        else 
+                                        {
+                                            // === NIGHT SHIFT STAFF (e.g., 4:00 PM to 2:00 AM / 3:00 AM) ===
+                                            // Since schedule might vary, we compute based on Total Hours rendered!
+                                            // Required: 9 hours (8 hrs work + 1 hr break). Less than 9 hours = Undertime.
+                                            
+                                            TimeSpan adjustedLastPunch = lastPunch;
+                                            if (rowPunches.Count > 1) 
+                                            {
+                                                // If they log out the next day (e.g. 02:00 AM is numerically less than 17:00 PM)
+                                                if (adjustedLastPunch < firstPunch) 
+                                                {
+                                                    adjustedLastPunch = adjustedLastPunch.Add(new TimeSpan(24, 0, 0)); 
+                                                }
+
+                                                double totalHoursRendered = (adjustedLastPunch - firstPunch).TotalHours;
+
+                                                if (totalHoursRendered < 9.0)
+                                                {
+                                                    // Convert missing hours to undertime minutes
+                                                    rUnder = (int)((9.0 - totalHoursRendered) * 60);
+                                                }
+                                                else if (totalHoursRendered >= 10.0) // At least 1 hr OT (9 hrs regular + 1 hr)
+                                                {
+                                                    double otDuration = totalHoursRendered - 9.0;
+                                                    int fullHours = (int)Math.Floor(otDuration);
+                                                    if (fullHours >= 1) rOT = Math.Min(fullHours, 3);
+                                                }
+                                            }
+                                            else 
+                                            {
+                                                // Forgot to punch out? Assume half day or zero duration. (Deduct 8 hrs)
+                                                rUnder = 8 * 60;
                                             }
                                         }
 
