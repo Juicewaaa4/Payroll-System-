@@ -72,5 +72,5 @@ xml<PackageReference Include="MySql.Data" Version="9.1.0" />
 <PackageReference Include="ExcelDataReader" Version="3.8.0" />
 <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
 
-📄 License
+ License
 This project is open source and available for personal and educational use.
