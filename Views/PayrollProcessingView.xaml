@@ -77,11 +77,11 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="PERIOD START" Style="{StaticResource FieldLabel}"/>
-                                <DatePicker SelectedDate="{Binding PeriodStart}" FontSize="13"/>
+                                <DatePicker SelectedDate="{Binding PeriodStart, UpdateSourceTrigger=PropertyChanged}" FontSize="13"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="PERIOD END" Style="{StaticResource FieldLabel}"/>
-                                <DatePicker SelectedDate="{Binding PeriodEnd}" FontSize="13"/>
+                                <DatePicker SelectedDate="{Binding PeriodEnd, UpdateSourceTrigger=PropertyChanged}" FontSize="13"/>
                             </StackPanel>
                         </Grid>
 

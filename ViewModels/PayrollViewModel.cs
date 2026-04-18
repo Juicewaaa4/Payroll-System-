@@ -55,8 +55,8 @@ namespace PayrollSystem.ViewModels
         public string OthersDeduction { get => _othersDeduction; set { SetProperty(ref _othersDeduction, value); ComputeDeductions(); } }
         public string TotalDeductions { get => _totalDeductions; set => SetProperty(ref _totalDeductions, value); }
         public string NetPay { get => _netPay; set => SetProperty(ref _netPay, value); }
-        public DateTime PeriodStart { get => _periodStart; set { if(SetProperty(ref _periodStart, value)) UpdateDaysFromPeriod(); } }
-        public DateTime PeriodEnd { get => _periodEnd; set { if(SetProperty(ref _periodEnd, value)) UpdateDaysFromPeriod(); } }
+        public DateTime PeriodStart { get => _periodStart; set { if(SetProperty(ref _periodStart, value)) { UpdateDaysFromPeriod(); PopulateFromBiometrics(); } } }
+        public DateTime PeriodEnd { get => _periodEnd; set { if(SetProperty(ref _periodEnd, value)) { UpdateDaysFromPeriod(); PopulateFromBiometrics(); } } }
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
 
         private bool _isUpdatingDates = false;
@@ -89,6 +89,7 @@ namespace PayrollSystem.ViewModels
         public ObservableCollection<EmployeeItem> Employees { get; } = new();
         public ObservableCollection<EmployeeItem> FilteredEmployees { get; } = new();
 
+        public ICommand ProcessPayrollCommand { get; }
         public ICommand ImportAttendanceCommand { get; }
         
         private readonly System.Collections.Generic.Dictionary<string, Utilities.AttendanceSummary> _importedAttendance = new();
@@ -170,7 +171,10 @@ namespace PayrollSystem.ViewModels
                             _importedAttendance[summary.EmpNumber] = summary;
                     }
 
-                    StatusMessage = $"✓ Successfully imported {summaries.Count} biometric records.";
+                    if (summaries.Count > 0)
+                        StatusMessage = $"✓ Successfully imported {summaries.Count} biometric records. Auto-computations ready.";
+                    else
+                        StatusMessage = "⚠️ No valid attendance records found. Ensure the Excel file contains the exact 'Attend. Report' format.";
 
                     // Re-trigger calculation if an employee is currently selected
                     if (SelectedEmployee != null)
@@ -191,19 +195,74 @@ namespace PayrollSystem.ViewModels
         {
             if (_selectedEmployee == null) return;
 
-            if (_importedAttendance.TryGetValue(_selectedEmployee.EmpNumber, out var summary) ||
-                _importedAttendance.TryGetValue(_selectedEmployee.Id.ToString(), out summary))
+            Utilities.AttendanceSummary? summary = null;
+
+            if (!_importedAttendance.TryGetValue(_selectedEmployee.EmpNumber, out summary) &&
+                !_importedAttendance.TryGetValue(_selectedEmployee.Id.ToString(), out summary))
             {
-                // Assign days and overtime (triggers partial ComputeSalary via setters)
-                WorkDays = summary.PresentDays.ToString();
-                OvertimeHours = summary.OvertimeHours.ToString();
+                // Fallback: Fuzzy Name Matching
+                string empFirstName = _selectedEmployee.FirstName.ToLower().Replace(" ", "");
+                string empLastName = _selectedEmployee.LastName.ToLower().Replace(" ", "");
+                string empFullName = _selectedEmployee.FullName.ToLower().Replace(" ", "");
+                
+                foreach (var kvp in _importedAttendance)
+                {
+                    string importedName = kvp.Value.Name.ToLower().Replace(" ", "");
+                    if (importedName.Length > 2 && (importedName.Contains(empFirstName) || importedName.Contains(empLastName) || empFullName.Contains(importedName)))
+                    {
+                        summary = kvp.Value;
+                        break;
+                    }
+                }
+            }
+
+            if (summary != null)
+            {
+                int defaultDays = 0;
+                int totalLate = 0;
+                int totalUnder = 0;
+                int totalOT = 0;
+
+                if (summary.DailyRecords != null && summary.DailyRecords.Count > 0)
+                {
+                    // Dynamically compute based on the set PeriodStart and PeriodEnd
+                    for (DateTime d = PeriodStart.Date; d <= PeriodEnd.Date; d = d.AddDays(1))
+                    {
+                        var rec = summary.DailyRecords.FirstOrDefault(r => r.DayNumber == d.Day);
+                        if (rec != null && rec.IsPresent)
+                        {
+                            defaultDays++;
+                            totalLate += rec.LateMinutes;
+                            totalUnder += rec.UndertimeMinutes;
+                            totalOT += rec.OvertimeHours;
+                        }
+                    }
+                }
+                else
+                {
+                    // Fallback globally if daily isn't available
+                    defaultDays = summary.PresentDays;
+                    totalLate = summary.LateMinutes;
+                    totalUnder = summary.UndertimeMinutes;
+                    totalOT = summary.OvertimeHours;
+                }
+
+                // If days resulted in 0 but they are processing a 6-day period, maybe leave the editable days alone
+                if (defaultDays > 0) 
+                {
+                    _isUpdatingDates = true;
+                    WorkDays = defaultDays.ToString();
+                    _isUpdatingDates = false;
+                }
+                
+                OvertimeHours = totalOT.ToString();
 
                 // Compute exact PHP money
                 var rateHourly = _selectedEmployee.DailyRate / 8m;
                 var ratePerMinute = rateHourly / 60m;
 
-                var lateMoney = Math.Round(ratePerMinute * summary.LateMinutes, 2);
-                var undertimeMoney = Math.Round(ratePerMinute * summary.UndertimeMinutes, 2);
+                var lateMoney = Math.Round(ratePerMinute * totalLate, 2);
+                var undertimeMoney = Math.Round(ratePerMinute * totalUnder, 2);
 
                 _lateDeduction = lateMoney.ToString("0.00");
                 _undertimeDeduction = undertimeMoney.ToString("0.00");

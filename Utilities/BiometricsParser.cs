@@ -7,6 +7,15 @@ using ExcelDataReader;
 
 namespace PayrollSystem.Utilities
 {
+    public class DailyAttendance
+    {
+        public int DayNumber { get; set; }
+        public int LateMinutes { get; set; }
+        public int UndertimeMinutes { get; set; }
+        public int OvertimeHours { get; set; }
+        public bool IsPresent { get; set; }
+    }
+
     public class AttendanceSummary
     {
         public string EmpNumber { get; set; } = "";
@@ -15,6 +24,7 @@ namespace PayrollSystem.Utilities
         public int LateMinutes { get; set; }
         public int UndertimeMinutes { get; set; }
         public int OvertimeHours { get; set; }
+        public List<DailyAttendance> DailyRecords { get; set; } = new();
     }
 
     public class BiometricsParser
@@ -35,33 +45,21 @@ namespace PayrollSystem.Utilities
                 {
                     var result = reader.AsDataSet();
 
-                    // Specifically look for the "Attend. Report" table, or fallback to first table
-                    DataTable? table = null;
-                    foreach (DataTable dt in result.Tables)
+                    // Scan ALL tables for Employee Blocks because Excel default names might differ
+                    foreach (DataTable table in result.Tables)
                     {
-                        if (dt.TableName.Contains("Attend. Report") || dt.TableName.Contains("Attend"))
+                        for (int r = 0; r < table.Rows.Count; r++)
                         {
-                            table = dt;
-                            break;
-                        }
-                    }
-                    if (table == null && result.Tables.Count > 0)
-                        table = result.Tables[0]; // fallback
-                    
-                    if (table == null) return summaries;
-
-                    // Scan for Employee Blocks
-                    for (int r = 0; r < table.Rows.Count; r++)
-                    {
-                        for (int c = 0; c < table.Columns.Count; c++)
-                        {
-                            string cellValue = table.Rows[r][c]?.ToString()?.Trim() ?? "";
-
-                            // Identify the start of a data block
-                            if (cellValue.Equals("Date/Week", StringComparison.OrdinalIgnoreCase))
+                            for (int c = 0; c < table.Columns.Count; c++)
                             {
-                                int anchorRow = r;
-                                int anchorCol = c;
+                                string cellValue = table.Rows[r][c]?.ToString()?.Trim() ?? "";
+                                string normalizedCell = cellValue.Replace("\n", "").Replace("\r", "").Replace(" ", "").ToLower();
+
+                                // Identify the start of a data block
+                                if (normalizedCell == "date/week" || normalizedCell == "date")
+                                {
+                                    int anchorRow = r;
+                                    int anchorCol = c;
 
                                 // 1. Extract Name and ID (search above this cell)
                                 string name = "Unknown";
@@ -109,6 +107,7 @@ namespace PayrollSystem.Utilities
                                 int lateMins = 0;
                                 int undertimeMins = 0;
                                 int overtimeHours = 0;
+                                List<DailyAttendance> dailyRecs = new List<DailyAttendance>();
 
                                 // Data starts 2 rows below "Date/Week"
                                 int dataStartRow = anchorRow + 2;
@@ -121,6 +120,14 @@ namespace PayrollSystem.Utilities
                                 {
                                     string dateStr = table.Rows[dataR][anchorCol]?.ToString()?.Trim() ?? "";
                                     
+                                    // Extract the day number (e.g. "1/Wed" -> 1)
+                                    int dayNum = -1;
+                                    if (dateStr.Contains("/")) {
+                                        int.TryParse(dateStr.Split('/')[0], out dayNum);
+                                    } else {
+                                        int.TryParse(dateStr.Replace(" ", ""), out dayNum);
+                                    }
+
                                     // If we hit an empty row or a new header, the block is done
                                     if (string.IsNullOrEmpty(dateStr) && 
                                        (dataR + 1 < table.Rows.Count && string.IsNullOrEmpty(table.Rows[dataR+1][anchorCol]?.ToString()?.Trim())))
@@ -128,44 +135,67 @@ namespace PayrollSystem.Utilities
                                         break; 
                                     }
                                     
-                                    // Make sure we have columns
-                                    if (anchorCol + 4 >= table.Columns.Count) continue;
-
-                                    string inStr = table.Rows[dataR][anchorCol + 2]?.ToString()?.Trim() ?? "";
-                                    string outStr = table.Rows[dataR][anchorCol + 4]?.ToString()?.Trim() ?? "";
-
-                                    // Fallbacks if Time1 is empty but maybe OT IN is present
-                                    if (string.IsNullOrEmpty(inStr) && string.IsNullOrEmpty(outStr) && anchorCol + 12 < table.Columns.Count)
+                                    // Gather any punches across Time1 (c+2, c+4), Time2 (c+6, c+8), OT (c+10, c+12)
+                                    List<TimeSpan> rowPunches = new List<TimeSpan>();
+                                    int[] timeCols = { anchorCol+2, anchorCol+4, anchorCol+6, anchorCol+8, anchorCol+10, anchorCol+12 };
+                                    
+                                    foreach (int tc in timeCols)
                                     {
-                                         inStr = table.Rows[dataR][anchorCol + 10]?.ToString()?.Trim() ?? "";
-                                         outStr = table.Rows[dataR][anchorCol + 12]?.ToString()?.Trim() ?? "";
+                                        if (tc < table.Columns.Count)
+                                        {
+                                            string tStr = table.Rows[dataR][tc]?.ToString()?.Trim() ?? "";
+                                            if (TimeSpan.TryParse(tStr, out TimeSpan ts))
+                                            {
+                                                rowPunches.Add(ts);
+                                            }
+                                        }
                                     }
 
-                                    if (!string.IsNullOrEmpty(inStr) || !string.IsNullOrEmpty(outStr))
+                                    if (rowPunches.Count > 0)
                                     {
                                         presentDays++;
 
-                                        if (TimeSpan.TryParse(inStr, out TimeSpan timeIn))
-                                        {
-                                            if (timeIn > graceLimit)
-                                                lateMins += (int)(timeIn - shiftStart).TotalMinutes;
-                                        }
+                                        TimeSpan firstPunch = rowPunches.Min();
+                                        TimeSpan lastPunch = rowPunches.Max();
 
-                                        if (TimeSpan.TryParse(outStr, out TimeSpan timeOut))
+                                        int rLate = 0;
+                                        int rUnder = 0;
+                                        int rOT = 0;
+
+                                        // Evaluate Late (only if it's reasonably a morning/arrival punch, say before 3PM)
+                                        if (firstPunch > graceLimit && firstPunch < new TimeSpan(15, 0, 0))
                                         {
-                                            if (timeOut < shiftEnd)
+                                            rLate = (int)(firstPunch - shiftStart).TotalMinutes;
+                                        }
+                                        
+                                        // Evaluate Undertime & OT (only if they have 2 punches or an Afternoon punch)
+                                        if (rowPunches.Count > 1 || lastPunch >= new TimeSpan(13, 0, 0)) // Post-lunch punch
+                                        {
+                                            if (lastPunch < shiftEnd)
                                             {
-                                                undertimeMins += (int)(shiftEnd - timeOut).TotalMinutes;
+                                                rUnder = (int)(shiftEnd - lastPunch).TotalMinutes;
                                             }
-                                            else if (timeOut > shiftEnd)
+                                            else if (lastPunch > shiftEnd)
                                             {
-                                                double otDuration = (timeOut - shiftEnd).TotalHours;
+                                                double otDuration = (lastPunch - shiftEnd).TotalHours;
                                                 int fullHours = (int)Math.Floor(otDuration);
                                                 
                                                 if (fullHours >= 1)
-                                                    overtimeHours += Math.Min(fullHours, 3);
+                                                    rOT = Math.Min(fullHours, 3);
                                             }
                                         }
+
+                                        lateMins += rLate;
+                                        undertimeMins += rUnder;
+                                        overtimeHours += rOT;
+
+                                        dailyRecs.Add(new DailyAttendance {
+                                            DayNumber = dayNum,
+                                            IsPresent = true,
+                                            LateMinutes = rLate,
+                                            UndertimeMinutes = rUnder,
+                                            OvertimeHours = rOT
+                                        });
                                     }
                                 }
 
@@ -176,11 +206,13 @@ namespace PayrollSystem.Utilities
                                     PresentDays = presentDays,
                                     LateMinutes = lateMins,
                                     UndertimeMinutes = undertimeMins,
-                                    OvertimeHours = overtimeHours
+                                    OvertimeHours = overtimeHours,
+                                    DailyRecords = dailyRecs
                                 });
                             }
                         }
                     }
+                } // End foreach table
                 }
             }
 
