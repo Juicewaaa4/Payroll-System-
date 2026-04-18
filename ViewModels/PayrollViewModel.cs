@@ -91,6 +91,8 @@ namespace PayrollSystem.ViewModels
 
         public ICommand ProcessPayrollCommand { get; }
 
+        public event Action<EmployeeItem>? PayrollProcessed;
+
         private decimal _cachedGross = 0;
 
         public PayrollViewModel()
@@ -309,6 +311,9 @@ namespace PayrollSystem.ViewModels
                 });
 
                 StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2} (Pending Approval)";
+                
+                // Signal navigation to Payslip section
+                PayrollProcessed?.Invoke(SelectedEmployee);
             }
             catch (Exception ex)
             {

@@ -62,7 +62,7 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*"/>
                             <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="120"/>
-                            <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="120"/>
+                            <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="160"/>
                             <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
                         </DataGrid.Columns>
                     </DataGrid>

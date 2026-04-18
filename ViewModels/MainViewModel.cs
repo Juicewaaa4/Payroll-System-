@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
@@ -67,6 +67,14 @@ namespace PayrollSystem.ViewModels
             _batchPrintViewModel = new BatchPrintViewModel();
             _reportsViewModel = new ReportsViewModel();
             _settingsViewModel = new SettingsViewModel();
+
+            // Auto-navigate to Payslip after processing payroll
+            _payrollViewModel.PayrollProcessed += emp => 
+            {
+                _payslipViewModel.LoadEmployees();
+                _payslipViewModel.SelectedEmployee = _payslipViewModel.Employees.FirstOrDefault(e => e.EmpNumber == emp.EmpNumber);
+                NavigateTo("Payslip");
+            };
 
             CurrentView = _dashboardViewModel;
 
