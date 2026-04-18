@@ -21,29 +21,7 @@
                 <!-- ═══ LEFT: Input Panel ═══ -->
                 <Border Grid.Column="0" Style="{StaticResource Card}">
                     <StackPanel>
-                        <Grid Margin="0,0,0,16">
-                            <TextBlock Text="Payroll Details" Style="{StaticResource SectionTitle}" VerticalAlignment="Center"/>
-                            
-                            <!-- Biometrics Import Button -->
-                            <Button HorizontalAlignment="Right" Cursor="Hand" Command="{Binding ImportAttendanceCommand}">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="importBg" Background="#E8F5E9" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1" CornerRadius="6" Padding="12,6">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="📥" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                                <TextBlock Text="Import Biometrics (Excel)" FontSize="12" FontWeight="SemiBold"
-                                                           Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="importBg" Property="Background" Value="#C8E6C9"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                        </Grid>
+                            <TextBlock Text="Payroll Details" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,0,16"/>
 
                         <!-- Searchable Employee Selection -->
                         <TextBlock Text="SEARCH &amp; SELECT EMPLOYEE" Style="{StaticResource FieldLabel}"/>

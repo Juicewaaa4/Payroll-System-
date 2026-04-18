@@ -18,11 +18,13 @@ namespace PayrollSystem.DataAccess
         private static readonly string PayrollFile = Path.Combine(DataFolder, "payroll_history.json");
         private static readonly string UsersFile = Path.Combine(DataFolder, "users.json");
         private static readonly string DepartmentsFile = Path.Combine(DataFolder, "departments.json");
+        private static readonly string BiometricsFile = Path.Combine(DataFolder, "biometrics_imports.json");
 
         public static ObservableCollection<EmployeeItem> Employees { get; private set; } = new();
         public static ObservableCollection<PayrollHistoryRecord> PayrollHistory { get; private set; } = new();
         public static ObservableCollection<UserItem> Users { get; private set; } = new();
         public static ObservableCollection<DepartmentItem> Departments { get; private set; } = new();
+        public static ObservableCollection<BiometricsImportRecord> BiometricsImports { get; private set; } = new();
 
         public static void Initialize()
         {
@@ -62,6 +64,13 @@ namespace PayrollSystem.DataAccess
                 {
                     var loaded = JsonSerializer.Deserialize<ObservableCollection<PayrollHistoryRecord>>(File.ReadAllText(PayrollFile));
                     if (loaded != null) PayrollHistory = loaded;
+                }
+
+                // Load Biometrics Import History
+                if (File.Exists(BiometricsFile))
+                {
+                    var loaded = JsonSerializer.Deserialize<ObservableCollection<BiometricsImportRecord>>(File.ReadAllText(BiometricsFile));
+                    if (loaded != null) BiometricsImports = loaded;
                 }
 
                 SaveChanges(); // Write initial files if they didn't exist
@@ -134,6 +143,7 @@ namespace PayrollSystem.DataAccess
                 File.WriteAllText(PayrollFile, JsonSerializer.Serialize(PayrollHistory, opts));
                 File.WriteAllText(UsersFile, JsonSerializer.Serialize(Users, opts));
                 File.WriteAllText(DepartmentsFile, JsonSerializer.Serialize(Departments, opts));
+                File.WriteAllText(BiometricsFile, JsonSerializer.Serialize(BiometricsImports, opts));
             }
             catch (Exception ex)
             {
@@ -163,6 +173,22 @@ namespace PayrollSystem.DataAccess
         public int Id { get; set; }
         public string Name { get; set; } = "";
         public string Description { get; set; } = "";
+    }
+
+    public class BiometricsImportRecord
+    {
+        public int Id { get; set; }
+        public string FileName { get; set; } = "";
+        public string FilePath { get; set; } = "";
+        public DateTime ImportedAt { get; set; } = DateTime.Now;
+        public string ImportedAtFormatted => ImportedAt.ToString("MMM dd, yyyy hh:mm tt");
+        public DateTime? PeriodStart { get; set; }
+        public DateTime? PeriodEnd { get; set; }
+        public string PeriodRange => PeriodStart.HasValue && PeriodEnd.HasValue
+            ? $"{PeriodStart.Value:MMM dd} - {PeriodEnd.Value:MMM dd, yyyy}"
+            : "Unknown";
+        public int EmployeeCount { get; set; }
+        public string FileHash { get; set; } = ""; // For duplicate detection
     }
 
     public class PayrollHistoryRecord : System.ComponentModel.INotifyPropertyChanged

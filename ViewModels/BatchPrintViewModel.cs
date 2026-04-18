@@ -39,9 +39,18 @@ namespace PayrollSystem.ViewModels
         public ICommand PrintAllCommand { get; }
         public ICommand EditRecordCommand { get; }
         public ICommand DeleteRecordCommand { get; }
+        public ICommand ConfirmDeleteCommand { get; }
+        public ICommand CancelDeleteCommand { get; }
         public ICommand ApproveRecordCommand { get; }
         public ICommand SaveEditCommand { get; }
         public ICommand CancelEditCommand { get; }
+
+        // --- Delete Modal State ---
+        private BatchPrintRecord? _pendingDeleteRecord;
+        private bool _isDeleteModalVisible;
+        private string _deleteTargetName = "";
+        public bool IsDeleteModalVisible { get => _isDeleteModalVisible; set => SetProperty(ref _isDeleteModalVisible, value); }
+        public string DeleteTargetName { get => _deleteTargetName; set => SetProperty(ref _deleteTargetName, value); }
 
         // --- Edit Modal State ---
         private BatchPrintRecord? _editingRecord;
@@ -87,19 +96,25 @@ namespace PayrollSystem.ViewModels
             PrintSelectedCommand = new RelayCommand(_ => PrintSelectedPayslips());
             PrintAllCommand = new RelayCommand(_ => { SelectAll = true; PrintSelectedPayslips(); });
             EditRecordCommand = new RelayCommand(p => OpenEditModal(p as BatchPrintRecord));
-            DeleteRecordCommand = new RelayCommand(p => DeleteRecord(p as BatchPrintRecord));
+            DeleteRecordCommand = new RelayCommand(p => ShowDeleteModal(p as BatchPrintRecord));
+            ConfirmDeleteCommand = new RelayCommand(_ => ConfirmDeleteRecord());
+            CancelDeleteCommand = new RelayCommand(_ => { IsDeleteModalVisible = false; _pendingDeleteRecord = null; });
             ApproveRecordCommand = new RelayCommand(p => ApproveRecord(p as BatchPrintRecord));
             SaveEditCommand = new RelayCommand(_ => SaveEditRecord());
             CancelEditCommand = new RelayCommand(_ => { IsEditModalVisible = false; _editingRecord = null; });
         }
 
-        private void DeleteRecord(BatchPrintRecord? record)
+        private void ShowDeleteModal(BatchPrintRecord? record)
         {
             if (record == null) return;
-            
-            var result = MessageBox.Show($"Are you sure you want to completely delete {record.Record.EmployeeName}'s payslip record? This cannot be undone.", "Delete Record", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            
-            if (result == MessageBoxResult.Yes)
+            _pendingDeleteRecord = record;
+            DeleteTargetName = $"{record.Record.EmployeeName} ({record.Record.PayrollDateFormatted})";
+            IsDeleteModalVisible = true;
+        }
+
+        private void ConfirmDeleteRecord()
+        {
+            if (_pendingDeleteRecord != null)
             {
                 if (DatabaseHelper.TestConnection())
                 {
@@ -108,16 +123,18 @@ namespace PayrollSystem.ViewModels
                         using var conn = DatabaseHelper.GetConnection();
                         conn.Open();
                         using var cmd = new MySqlCommand("DELETE FROM payroll WHERE id=@id", conn);
-                        cmd.Parameters.AddWithValue("@id", record.Record.Id);
+                        cmd.Parameters.AddWithValue("@id", _pendingDeleteRecord.Record.Id);
                         cmd.ExecuteNonQuery();
                     }
                     catch { }
                 }
 
-                DemoDatabase.PayrollHistory.Remove(record.Record);
-                PayrollRecords.Remove(record);
-                StatusMessage = $"✓ Successfully deleted payroll record for {record.Record.EmployeeName}.";
+                DemoDatabase.PayrollHistory.Remove(_pendingDeleteRecord.Record);
+                PayrollRecords.Remove(_pendingDeleteRecord);
+                StatusMessage = $"✓ Successfully deleted payroll record for {_pendingDeleteRecord.Record.EmployeeName}.";
+                _pendingDeleteRecord = null;
             }
+            IsDeleteModalVisible = false;
         }
 
         private void ApproveRecord(BatchPrintRecord? record)

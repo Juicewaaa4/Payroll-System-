@@ -90,7 +90,6 @@ namespace PayrollSystem.ViewModels
         public ObservableCollection<EmployeeItem> FilteredEmployees { get; } = new();
 
         public ICommand ProcessPayrollCommand { get; }
-        public ICommand ImportAttendanceCommand { get; }
         
         private readonly System.Collections.Generic.Dictionary<string, Utilities.AttendanceSummary> _importedAttendance = new();
 
@@ -101,7 +100,6 @@ namespace PayrollSystem.ViewModels
         public PayrollViewModel()
         {
             ProcessPayrollCommand = new RelayCommand(_ => ProcessPayroll());
-            ImportAttendanceCommand = new RelayCommand(_ => ImportAttendance());
         }
 
         public void LoadData()
@@ -147,22 +145,19 @@ namespace PayrollSystem.ViewModels
             }
 
             FilterEmployees();
+            LoadLatestBiometricsData();
         }
 
-        private void ImportAttendance()
+        private void LoadLatestBiometricsData()
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog
+            try
             {
-                Filter = "Excel Files|*.xls;*.xlsx|All Files|*.*",
-                Title = "Select Biometrics Excel File"
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                try
+                // Grab the single most recent import
+                var latestImport = DemoDatabase.BiometricsImports.OrderByDescending(x => x.ImportedAt).FirstOrDefault();
+                if (latestImport != null && System.IO.File.Exists(latestImport.FilePath))
                 {
-                    StatusMessage = "Parsing biometrics data. Please wait...";
-                    var result = Utilities.BiometricsParser.ParseExcelFile(dialog.FileName);
+                    StatusMessage = "Loading latest biometrics data...";
+                    var result = Utilities.BiometricsParser.ParseExcelFile(latestImport.FilePath);
 
                     _importedAttendance.Clear();
                     foreach (var summary in result.Records)
@@ -173,34 +168,24 @@ namespace PayrollSystem.ViewModels
 
                     if (result.Records.Count > 0)
                     {
-                        StatusMessage = $"✓ Successfully imported {result.Records.Count} biometric records. Auto-computations ready.";
-                        
-                        // Automatically SNAP the Date Pickers to the Excel file's actual date range!
+                        StatusMessage = $"✓ Auto-loaded {result.Records.Count} biometric records from {latestImport.FileName}.";
                         if (result.StartDate.HasValue && result.EndDate.HasValue)
                         {
-                            _isUpdatingDates = true; // Prevent loop
+                            _isUpdatingDates = true; 
                             PeriodStart = result.StartDate.Value;
                             PeriodEnd = result.EndDate.Value;
                             _isUpdatingDates = false;
                         }
                     }
-                    else
-                    {
-                        StatusMessage = "⚠️ No valid attendance records found. Ensure the Excel file contains the exact 'Attend. Report' format.";
-                    }
-
-                    // Re-trigger calculation if an employee is currently selected
-                    if (SelectedEmployee != null)
-                    {
-                        var temp = SelectedEmployee;
-                        _selectedEmployee = null; // Bypass property to prevent double trigger
-                        SelectedEmployee = temp;
-                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    StatusMessage = "Error parsing file. Ensure it's a valid Biometrics Excel export. " + ex.Message;
+                    StatusMessage = "No biometrics data loaded. Please import an Excel file via the Biometrics section.";
                 }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "Failed to load background biometrics data: " + ex.Message;
             }
         }
 

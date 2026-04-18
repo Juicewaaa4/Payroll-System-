@@ -129,7 +129,7 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="Action" Width="170">
+                                <DataGridTemplateColumn Header="Action" Width="250">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -237,6 +237,33 @@
                                 Background="White" BorderBrush="#E0E0E0" BorderThickness="1" Cursor="Hand" Padding="0,11" Foreground="#757575"/>
                         <Button Grid.Column="2" Content="💾 Save" Command="{Binding SaveEditCommand}" IsDefault="True"
                                 Background="{StaticResource PrimaryBrush}" Foreground="White" Cursor="Hand" Padding="0,11" FontWeight="SemiBold"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- ═══ DELETE CONFIRMATION MODAL ═══ -->
+        <Border Background="#80000000" Visibility="{Binding IsDeleteModalVisible, Converter={StaticResource BoolToVisConverter}}">
+            <Border Background="White" CornerRadius="12" Padding="32" Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="⚠️" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="Delete Payroll Record?" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding DeleteTargetName}" FontSize="13" Foreground="#757575" HorizontalAlignment="Center" 
+                               Margin="0,0,0,8" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="This will permanently remove this payslip record from the system. This action cannot be undone." 
+                               FontSize="12" Foreground="#9E9E9E" HorizontalAlignment="Center" TextAlignment="Center"
+                               Margin="0,0,0,24" TextWrapping="Wrap"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CancelDeleteCommand}" IsCancel="True"
+                                Background="White" BorderBrush="#E0E0E0" BorderThickness="1" Cursor="Hand" Padding="0,11" Foreground="#757575"/>
+                        <Button Grid.Column="2" Content="🗑️ Delete" Command="{Binding ConfirmDeleteCommand}" IsDefault="True"
+                                Background="#D32F2F" Foreground="White" Cursor="Hand" Padding="0,11" FontWeight="SemiBold" BorderThickness="0"/>
                     </Grid>
                 </StackPanel>
             </Border>
