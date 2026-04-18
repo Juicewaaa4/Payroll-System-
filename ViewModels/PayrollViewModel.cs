@@ -34,7 +34,7 @@ namespace PayrollSystem.ViewModels
         private DateTime _periodEnd = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
         private string _statusMessage = "";
 
-        public EmployeeItem? SelectedEmployee { get => _selectedEmployee; set { SetProperty(ref _selectedEmployee, value); ComputeSalary(); } }
+        public EmployeeItem? SelectedEmployee { get => _selectedEmployee; set { SetProperty(ref _selectedEmployee, value); PopulateFromBiometrics(); ComputeSalary(); } }
         public string EmployeeSearch { get => _employeeSearch; set { SetProperty(ref _employeeSearch, value); FilterEmployees(); } }
         public string WorkDays { get => _workDays; set { if(SetProperty(ref _workDays, value)) { ComputeSalary(); UpdatePeriodFromDays(); } } }
         public string OvertimeHours { get => _overtimeHours; set { SetProperty(ref _overtimeHours, value); ComputeSalary(); } }
@@ -89,7 +89,9 @@ namespace PayrollSystem.ViewModels
         public ObservableCollection<EmployeeItem> Employees { get; } = new();
         public ObservableCollection<EmployeeItem> FilteredEmployees { get; } = new();
 
-        public ICommand ProcessPayrollCommand { get; }
+        public ICommand ImportAttendanceCommand { get; }
+        
+        private readonly System.Collections.Generic.Dictionary<string, Utilities.AttendanceSummary> _importedAttendance = new();
 
         public event Action<EmployeeItem>? PayrollProcessed;
 
@@ -98,6 +100,7 @@ namespace PayrollSystem.ViewModels
         public PayrollViewModel()
         {
             ProcessPayrollCommand = new RelayCommand(_ => ProcessPayroll());
+            ImportAttendanceCommand = new RelayCommand(_ => ImportAttendance());
         }
 
         public void LoadData()
@@ -143,6 +146,79 @@ namespace PayrollSystem.ViewModels
             }
 
             FilterEmployees();
+        }
+
+        private void ImportAttendance()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Excel Files|*.xls;*.xlsx|All Files|*.*",
+                Title = "Select Biometrics Excel File"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    StatusMessage = "Parsing biometrics data. Please wait...";
+                    var summaries = Utilities.BiometricsParser.ParseExcelFile(dialog.FileName);
+
+                    _importedAttendance.Clear();
+                    foreach (var summary in summaries)
+                    {
+                        if (!string.IsNullOrEmpty(summary.EmpNumber))
+                            _importedAttendance[summary.EmpNumber] = summary;
+                    }
+
+                    StatusMessage = $"✓ Successfully imported {summaries.Count} biometric records.";
+
+                    // Re-trigger calculation if an employee is currently selected
+                    if (SelectedEmployee != null)
+                    {
+                        var temp = SelectedEmployee;
+                        _selectedEmployee = null; // Bypass property to prevent double trigger
+                        SelectedEmployee = temp;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = "Error parsing file. Ensure it's a valid Biometrics Excel export. " + ex.Message;
+                }
+            }
+        }
+
+        private void PopulateFromBiometrics()
+        {
+            if (_selectedEmployee == null) return;
+
+            if (_importedAttendance.TryGetValue(_selectedEmployee.EmpNumber, out var summary) ||
+                _importedAttendance.TryGetValue(_selectedEmployee.Id.ToString(), out summary))
+            {
+                // Assign days and overtime (triggers partial ComputeSalary via setters)
+                WorkDays = summary.PresentDays.ToString();
+                OvertimeHours = summary.OvertimeHours.ToString();
+
+                // Compute exact PHP money
+                var rateHourly = _selectedEmployee.DailyRate / 8m;
+                var ratePerMinute = rateHourly / 60m;
+
+                var lateMoney = Math.Round(ratePerMinute * summary.LateMinutes, 2);
+                var undertimeMoney = Math.Round(ratePerMinute * summary.UndertimeMinutes, 2);
+
+                _lateDeduction = lateMoney.ToString("0.00");
+                _undertimeDeduction = undertimeMoney.ToString("0.00");
+
+                OnPropertyChanged(nameof(LateDeduction));
+                OnPropertyChanged(nameof(UndertimeDeduction));
+            }
+            else
+            {
+                // Reset to defaults if no record exists
+                _lateDeduction = "0";
+                _undertimeDeduction = "0";
+                OnPropertyChanged(nameof(LateDeduction));
+                OnPropertyChanged(nameof(UndertimeDeduction));
+            }
         }
 
         private void FilterEmployees()

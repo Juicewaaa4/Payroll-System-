@@ -12,9 +12,9 @@ TRACE;DEBUG;NET;NET8_0;NETCOREAPP
 C:\Payroll System\App.xaml
 101714360549
 
-4767553968
-2061183572766
+481637756123
+2081767062398
 MainWindow.xaml;Themes\GreenTheme.xaml;Views\BatchPrintView.xaml;Views\DashboardView.xaml;Views\EmployeeManagementView.xaml;Views\LoginWindow.xaml;Views\PayrollProcessingView.xaml;Views\PayslipView.xaml;Views\ReportsView.xaml;Views\SettingsView.xaml;
 
-False
+True
 
