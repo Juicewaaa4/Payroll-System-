@@ -31,15 +31,32 @@
                             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource PrimaryBrush}" 
                                        VerticalAlignment="Center" Margin="0,0,16,0" FontWeight="SemiBold"/>
                                        
-                            <Button Command="{Binding PrintSelectedCommand}" Cursor="Hand">
+                            <!-- Print Selected Button -->
+                            <Button Command="{Binding PrintSelectedCommand}" Cursor="Hand" Margin="0,0,10,0">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
-                                        <Border x:Name="printBtn" Background="#1565C0" CornerRadius="6" Padding="20,10">
-                                            <TextBlock Text="🖨️ Print Selected (Batch)" Foreground="White" FontSize="13" FontWeight="SemiBold"/>
+                                        <Border x:Name="printBtn" Background="#1565C0" CornerRadius="6" Padding="15,10">
+                                            <TextBlock Text="🖨️ Print Selected" Foreground="White" FontSize="13" FontWeight="SemiBold"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="printBtn" Property="Background" Value="#0D47A1"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+
+                            <!-- Print All Button -->
+                            <Button Command="{Binding PrintAllCommand}" Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="printAllBtn" Background="{StaticResource PrimaryBrush}" CornerRadius="6" Padding="15,10">
+                                            <TextBlock Text="📑 Print All (Batch)" Foreground="White" FontSize="13" FontWeight="SemiBold"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="printAllBtn" Property="Background" Value="#1E7B44"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -119,6 +136,10 @@
                                                 <Button Content="✏️ Edit" Command="{Binding DataContext.EditRecordCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}" Foreground="#1976D2" Background="Transparent" BorderThickness="0" 
                                                         Cursor="Hand" FontSize="12" Padding="6,3"/>
+                                                
+                                                <Button Content="❌ Delete" Command="{Binding DataContext.DeleteRecordCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}" Foreground="#D32F2F" Background="Transparent" BorderThickness="0" 
+                                                        Cursor="Hand" FontSize="12" Padding="6,3" Margin="2,0,0,0"/>
                                                 
                                                 <Button Command="{Binding DataContext.ApproveRecordCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}" Cursor="Hand" Margin="4,0,0,0">

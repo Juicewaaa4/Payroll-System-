@@ -36,7 +36,9 @@ namespace PayrollSystem.ViewModels
         public ObservableCollection<BatchPrintRecord> PayrollRecords { get; } = new();
 
         public ICommand PrintSelectedCommand { get; }
+        public ICommand PrintAllCommand { get; }
         public ICommand EditRecordCommand { get; }
+        public ICommand DeleteRecordCommand { get; }
         public ICommand ApproveRecordCommand { get; }
         public ICommand SaveEditCommand { get; }
         public ICommand CancelEditCommand { get; }
@@ -83,10 +85,39 @@ namespace PayrollSystem.ViewModels
         public BatchPrintViewModel()
         {
             PrintSelectedCommand = new RelayCommand(_ => PrintSelectedPayslips());
+            PrintAllCommand = new RelayCommand(_ => { SelectAll = true; PrintSelectedPayslips(); });
             EditRecordCommand = new RelayCommand(p => OpenEditModal(p as BatchPrintRecord));
+            DeleteRecordCommand = new RelayCommand(p => DeleteRecord(p as BatchPrintRecord));
             ApproveRecordCommand = new RelayCommand(p => ApproveRecord(p as BatchPrintRecord));
             SaveEditCommand = new RelayCommand(_ => SaveEditRecord());
             CancelEditCommand = new RelayCommand(_ => { IsEditModalVisible = false; _editingRecord = null; });
+        }
+
+        private void DeleteRecord(BatchPrintRecord? record)
+        {
+            if (record == null) return;
+            
+            var result = MessageBox.Show($"Are you sure you want to completely delete {record.Record.EmployeeName}'s payslip record? This cannot be undone.", "Delete Record", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                if (DatabaseHelper.TestConnection())
+                {
+                    try
+                    {
+                        using var conn = DatabaseHelper.GetConnection();
+                        conn.Open();
+                        using var cmd = new MySqlCommand("DELETE FROM payroll WHERE id=@id", conn);
+                        cmd.Parameters.AddWithValue("@id", record.Record.Id);
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch { }
+                }
+
+                DemoDatabase.PayrollHistory.Remove(record.Record);
+                PayrollRecords.Remove(record);
+                StatusMessage = $"✓ Successfully deleted payroll record for {record.Record.EmployeeName}.";
+            }
         }
 
         private void ApproveRecord(BatchPrintRecord? record)

@@ -238,7 +238,24 @@ namespace PayrollSystem.ViewModels
 
                 if (summary.DailyRecords != null && summary.DailyRecords.Count > 0)
                 {
-                    // Dynamically compute based on the set PeriodStart and PeriodEnd
+                    // [NEW LOGIC] "Nag rereflect din sa period start and period end"
+                    // Snap the calendar to match the employee's actual attendance range!
+                    int minDay = summary.DailyRecords.Min(r => r.DayNumber);
+                    int maxDay = summary.DailyRecords.Max(r => r.DayNumber);
+
+                    try 
+                    {
+                        DateTime newStart = new DateTime(PeriodStart.Year, PeriodStart.Month, minDay);
+                        DateTime newEnd = new DateTime(PeriodEnd.Year, PeriodEnd.Month, maxDay);
+                        
+                        _isUpdatingDates = true; 
+                        PeriodStart = newStart; 
+                        PeriodEnd = newEnd; 
+                        _isUpdatingDates = false;
+                    } 
+                    catch { } // Suppress if month boundaries fail due to leap year edge cases
+
+                    // Dynamically compute based on the SNAP dates
                     for (DateTime d = PeriodStart.Date; d <= PeriodEnd.Date; d = d.AddDays(1))
                     {
                         var rec = summary.DailyRecords.FirstOrDefault(r => r.DayNumber == d.Day);
