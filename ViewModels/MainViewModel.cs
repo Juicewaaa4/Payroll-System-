@@ -14,6 +14,7 @@ namespace PayrollSystem.ViewModels
         private string _currentUserName = "";
         private string _currentUserRole = "";
         private string _activeNav = "Dashboard";
+        private bool _isHelpModalVisible = false;
 
         public BaseViewModel CurrentView
         {
@@ -39,6 +40,12 @@ namespace PayrollSystem.ViewModels
             set => SetProperty(ref _activeNav, value);
         }
 
+        public bool IsHelpModalVisible
+        {
+            get => _isHelpModalVisible;
+            set => SetProperty(ref _isHelpModalVisible, value);
+        }
+
         // Navigation Commands
         public ICommand NavigateDashboardCommand { get; }
         public ICommand NavigateEmployeesCommand { get; }
@@ -49,6 +56,7 @@ namespace PayrollSystem.ViewModels
         public ICommand NavigateReportsCommand { get; }
         public ICommand NavigateSettingsCommand { get; }
         public ICommand LogoutCommand { get; }
+        public ICommand ToggleHelpCommand { get; }
 
         // ViewModels
         private readonly DashboardViewModel _dashboardViewModel;
@@ -90,6 +98,7 @@ namespace PayrollSystem.ViewModels
             NavigateReportsCommand = new RelayCommand(_ => NavigateTo("Reports"));
             NavigateSettingsCommand = new RelayCommand(_ => NavigateTo("Settings"));
             LogoutCommand = new RelayCommand(_ => Logout());
+            ToggleHelpCommand = new RelayCommand(_ => IsHelpModalVisible = !IsHelpModalVisible);
         }
 
         public void SetUser(string name, string role)

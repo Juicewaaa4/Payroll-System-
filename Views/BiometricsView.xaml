@@ -115,7 +115,7 @@
                             <Run>Click "Import Biometrics (Excel)" above to upload it. The system will automatically detect employees, shifts, and attendance.</Run>
                             <LineBreak/>
                             <Run FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}">3.</Run>
-                            <Run>Go to "Payroll" section → click "Import Biometrics (Excel)" again to load the same file for payroll computation.</Run>
+                            <Run>Go to the "Payroll" section → select an employee. The system will automatically read the latest imported biometrics and compute their attendance.</Run>
                             <LineBreak/>
                             <Run FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}">4.</Run>
                             <Run>If you try to import the same Excel file twice, the system will block it to prevent duplicate data.</Run>

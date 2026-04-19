@@ -2,14 +2,25 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{StaticResource BackgroundBrush}">
-
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="32,28,32,32">
 
             <!-- Page Header -->
-            <TextBlock Text="Payslip Generator" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
-            <TextBlock Text="Generate and print employee payslips" Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="13" Margin="0,0,0,20"/>
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Payslip Generator" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
+                    <TextBlock Text="Generate and print employee payslips" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                </StackPanel>
+                
+                <Button Grid.Column="1" Content="❓ Help" Command="{Binding ShowHelpCommand}" 
+                        Background="White" BorderBrush="#E0E0E0" BorderThickness="1" 
+                        Foreground="#757575" Padding="12,6" Cursor="Hand" FontWeight="SemiBold" VerticalAlignment="Top"/>
+            </Grid>
 
             <!-- ═══ CONTROLS ROW ═══ -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,20" Padding="20">
@@ -47,7 +58,7 @@
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="DAYS" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="50" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="55" FontSize="13"
                                          Padding="6,8" Text="{Binding WorkDays, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -55,7 +66,7 @@
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="OT HRS" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="50" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="55" FontSize="13"
                                          Padding="6,8" Text="{Binding OvertimeHours, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -63,7 +74,7 @@
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="HOLIDAY" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="50" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="55" FontSize="13"
                                          Padding="6,8" Text="{Binding HolidayHours, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -71,7 +82,7 @@
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="ALLOW" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="65" FontSize="13"
                                          Padding="6,8" Text="{Binding AllowanceInput, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -79,7 +90,7 @@
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="BONUS" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="65" FontSize="13"
                                          Padding="6,8" Text="{Binding BonusInput, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -87,7 +98,7 @@
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="LOAN" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="65" FontSize="13"
                                          Padding="6,8" Text="{Binding LoanInput, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -95,7 +106,7 @@
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="LATE" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="65" FontSize="13"
                                          Padding="6,8" Text="{Binding LateInput, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -103,7 +114,7 @@
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="UNDERTIME" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="70" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="75" FontSize="13"
                                          Padding="6,8" Text="{Binding UndertimeInput, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -111,7 +122,7 @@
                         <StackPanel Margin="0,0,0,0">
                             <TextBlock Text="OTHERS" Style="{StaticResource FieldLabel}"/>
                             <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6">
-                                <TextBox Background="Transparent" BorderThickness="0" Width="60" FontSize="13"
+                                <TextBox Background="Transparent" BorderThickness="0" MinWidth="65" FontSize="13"
                                          Padding="6,8" Text="{Binding OthersInput, UpdateSourceTrigger=PropertyChanged}"
                                          TextAlignment="Center"/>
                             </Border>
@@ -420,4 +431,31 @@
             </Border>
         </StackPanel>
     </ScrollViewer>
+
+    <!-- ═══ HELP MODAL ═══ -->
+    <Border Background="#80000000" Visibility="{Binding IsHelpModalVisible, Converter={StaticResource BoolToVisConverter}}">
+        <Border Background="White" CornerRadius="12" Padding="32" Width="500" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel>
+                <TextBlock Text="📖 How to Process Payroll" FontSize="18" FontWeight="Bold" Margin="0,0,0,16" Foreground="#1E7B44"/>
+                
+                <StackPanel Margin="0,0,0,24">
+                    <TextBlock Text="1. Select Employee" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Search and pick an employee from the dropdown menu to pull their basic salary configuration." TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,12"/>
+                    
+                    <TextBlock Text="2. Set Period and Days" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Choose the Period Start and End dates for the payslip, and input the total worked days (e.g. 11 or 13 days)." TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="3. Input Additions and Deductions" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Enter override values for Overtime (OT HRS), Holiday Pay, Allowances, Bonuses, and any specific Deductions." TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="4. Generate &amp; Print" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Review the computed details in the preview below. Click 'Print This Payslip' to finish and automatically save the record." TextWrapping="Wrap" Foreground="#555"/>
+                </StackPanel>
+
+                <Button Content="Salamat Juswa!" Command="{Binding HideHelpCommand}" IsDefault="True"
+                        Background="#1E7B44" Foreground="White" Cursor="Hand" Padding="0,11" FontWeight="SemiBold" BorderThickness="0"/>
+            </StackPanel>
+        </Border>
+    </Border>
+    </Grid>
 </UserControl>

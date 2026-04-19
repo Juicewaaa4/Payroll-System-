@@ -130,10 +130,17 @@ namespace PayrollSystem.ViewModels
         public ICommand GeneratePayslipCommand { get; }
         public ICommand PrintCommand { get; }
 
+        private bool _isHelpModalVisible;
+        public bool IsHelpModalVisible { get => _isHelpModalVisible; set => SetProperty(ref _isHelpModalVisible, value); }
+        public ICommand ShowHelpCommand { get; }
+        public ICommand HideHelpCommand { get; }
+
         public PayslipViewModel()
         {
             GeneratePayslipCommand = new RelayCommand(_ => ComputePayslip());
             PrintCommand = new RelayCommand(_ => PrintPayslip());
+            ShowHelpCommand = new RelayCommand(_ => IsHelpModalVisible = true);
+            HideHelpCommand = new RelayCommand(_ => IsHelpModalVisible = false);
             UpdatePeriodText();
         }
 
@@ -622,18 +629,18 @@ namespace PayrollSystem.ViewModels
         private static System.Windows.Documents.TableRow CreateEarningRow(string desc, string rate, string days, string amt)
         {
             var row = new System.Windows.Documents.TableRow();
-            row.Cells.Add(CreateCell(desc, System.Windows.FontWeights.Normal, null, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Left, 11, true));
-            row.Cells.Add(CreateCell(rate, System.Windows.FontWeights.Normal, null, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Center, 11, true));
-            row.Cells.Add(CreateCell(days, System.Windows.FontWeights.Normal, null, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Center, 11, true));
-            row.Cells.Add(CreateCell(string.IsNullOrWhiteSpace(amt) || amt == " " ? " " : $"₱ {amt}", System.Windows.FontWeights.Normal, null, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Right, 11, true));
+            row.Cells.Add(CreateCell(desc, System.Windows.FontWeights.Normal, System.Windows.Media.Brushes.Transparent, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Left, 11, true));
+            row.Cells.Add(CreateCell(rate, System.Windows.FontWeights.Normal, System.Windows.Media.Brushes.Transparent, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Center, 11, true));
+            row.Cells.Add(CreateCell(days, System.Windows.FontWeights.Normal, System.Windows.Media.Brushes.Transparent, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Center, 11, true));
+            row.Cells.Add(CreateCell(string.IsNullOrWhiteSpace(amt) || amt == " " ? " " : $"₱ {amt}", System.Windows.FontWeights.Normal, System.Windows.Media.Brushes.Transparent, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Right, 11, true));
             return row;
         }
 
         private static System.Windows.Documents.TableRow CreateDeductionRow(string desc, string amt)
         {
             var row = new System.Windows.Documents.TableRow();
-            row.Cells.Add(CreateCell(desc, System.Windows.FontWeights.Normal, null, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Left, 11, true));
-            row.Cells.Add(CreateCell(string.IsNullOrWhiteSpace(amt) || amt == " " ? " " : $"₱ {amt}", System.Windows.FontWeights.Normal, null, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Right, 11, true));
+            row.Cells.Add(CreateCell(desc, System.Windows.FontWeights.Normal, System.Windows.Media.Brushes.Transparent, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Left, 11, true));
+            row.Cells.Add(CreateCell(string.IsNullOrWhiteSpace(amt) || amt == " " ? " " : $"₱ {amt}", System.Windows.FontWeights.Normal, System.Windows.Media.Brushes.Transparent, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Right, 11, true));
             return row;
         }
     }

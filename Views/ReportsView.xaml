@@ -7,11 +7,31 @@
         <StackPanel Margin="32,28,32,32">
 
             <!-- Header -->
-            <StackPanel Margin="0,0,0,4">
-                <TextBlock Text="Reports &amp; Transaction History" Style="{StaticResource PageTitle}"/>
-            </StackPanel>
-            <TextBlock Text="View payroll records and employee deduction history" Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="13" Margin="0,0,0,24"/>
+            <Grid Margin="0,0,0,24">
+                <StackPanel HorizontalAlignment="Left">
+                    <TextBlock Text="Reports &amp; Transaction History" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
+                    <TextBlock Text="View payroll records and employee deduction history" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                </StackPanel>
+                
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="Hand"
+                        Command="{Binding DataContext.NavigateSettingsCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="settingsBtn" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6" Padding="12,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚙️" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Manage Users &amp; Roles" Foreground="#616161" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="settingsBtn" Property="Background" Value="#F5F5F5"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
 
             <!-- Status Message -->
             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource PrimaryBrush}"
@@ -38,7 +58,7 @@
                                         CornerRadius="6" Padding="12,7">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="📊" FontSize="12" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Export" FontSize="11" FontWeight="SemiBold"
+                                        <TextBlock Text="Export Payroll" FontSize="11" FontWeight="SemiBold"
                                                    Foreground="White" VerticalAlignment="Center" FontFamily="{StaticResource PrimaryFont}"/>
                                     </StackPanel>
                                 </Border>
@@ -67,6 +87,8 @@
                               CellStyle="{StaticResource ModernDataGridCell}"
                               RowStyle="{StaticResource ModernDataGridRow}"
                               CanUserSortColumns="False"
+                              AlternationCount="2"
+                              AlternatingRowBackground="#F1F8E9"
                               MaxHeight="350">
                         <DataGrid.ColumnHeaderStyle>
                             <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource ModernDataGridColumnHeader}">
@@ -82,6 +104,10 @@
                             <DataGridTextColumn Header="SSS" Binding="{Binding Sss, StringFormat=₱{0:N2}}" Width="75"/>
                             <DataGridTextColumn Header="PAG-IBIG" Binding="{Binding Pagibig, StringFormat=₱{0:N2}}" Width="78"/>
                             <DataGridTextColumn Header="PhilHealth" Binding="{Binding Philhealth, StringFormat=₱{0:N2}}" Width="82"/>
+                            <DataGridTextColumn Header="Loan" Binding="{Binding Loan, StringFormat=₱{0:N2}}" Width="65"/>
+                            <DataGridTextColumn Header="Late" Binding="{Binding Late, StringFormat=₱{0:N2}}" Width="60"/>
+                            <DataGridTextColumn Header="U.T." Binding="{Binding Undertime, StringFormat=₱{0:N2}}" Width="60"/>
+                            <DataGridTextColumn Header="Others" Binding="{Binding Others, StringFormat=₱{0:N2}}" Width="65"/>
                             <DataGridTextColumn Header="Total Ded." Binding="{Binding Deductions}" Width="90"/>
                             <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="95"/>
                             <DataGridTemplateColumn Header="Status" Width="90">
@@ -153,7 +179,7 @@
                                                 CornerRadius="6" Padding="12,6">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="📊" FontSize="12" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                <TextBlock Text="Export Deductions" FontSize="11" FontWeight="SemiBold"
+                                                <TextBlock Text="Export Deduction History" FontSize="11" FontWeight="SemiBold"
                                                            Foreground="White" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
@@ -219,6 +245,8 @@
                                       ColumnHeaderStyle="{StaticResource ModernDataGridColumnHeader}"
                                       CellStyle="{StaticResource ModernDataGridCell}"
                                       RowStyle="{StaticResource ModernDataGridRow}"
+                                      AlternationCount="2"
+                                      AlternatingRowBackground="#F1F8E9"
                                       MaxHeight="300">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Date" Binding="{Binding PayrollDate}" Width="165"/>
