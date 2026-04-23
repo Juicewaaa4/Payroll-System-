@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="ExcelDataReader" Version="3.8.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
     <Resource Include="Logo\**" />
     <PackageReference Include="MySql.Data" Version="9.1.0" />
   </ItemGroup>

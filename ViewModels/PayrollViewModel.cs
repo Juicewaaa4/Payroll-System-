@@ -30,6 +30,7 @@ namespace PayrollSystem.ViewModels
         private string _othersDeduction = "0";
         private string _totalDeductions = "₱0.00";
         private string _netPay = "₱0.00";
+        private string _othersDeductionName = "Others";
         private DateTime _periodStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
         private DateTime _periodEnd = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
         private string _statusMessage = "";
@@ -53,6 +54,8 @@ namespace PayrollSystem.ViewModels
         public string LateDeduction { get => _lateDeduction; set { SetProperty(ref _lateDeduction, value); ComputeDeductions(); } }
         public string UndertimeDeduction { get => _undertimeDeduction; set { SetProperty(ref _undertimeDeduction, value); ComputeDeductions(); } }
         public string OthersDeduction { get => _othersDeduction; set { SetProperty(ref _othersDeduction, value); ComputeDeductions(); } }
+        public string OthersDeductionName { get => _othersDeductionName; set => SetProperty(ref _othersDeductionName, value); }
+        public ObservableCollection<string> OtherDeductionTypes { get; } = new() { "Advance Cash", "Damages", "Loss", "Others" };
         public string TotalDeductions { get => _totalDeductions; set => SetProperty(ref _totalDeductions, value); }
         public string NetPay { get => _netPay; set => SetProperty(ref _netPay, value); }
         public DateTime PeriodStart { get => _periodStart; set { if(SetProperty(ref _periodStart, value)) { UpdateDaysFromPeriod(); PopulateFromBiometrics(); } } }
@@ -438,7 +441,7 @@ namespace PayrollSystem.ViewModels
                     if(loan > 0) SaveDeduction(conn, payrollId, "Loan", "Loan", loan);
                     if(late > 0) SaveDeduction(conn, payrollId, "Late", "Other", late);
                     if(under > 0) SaveDeduction(conn, payrollId, "Undertime", "Other", under);
-                    if(others > 0) SaveDeduction(conn, payrollId, "Others", "Other", others);
+                    if(others > 0) SaveDeduction(conn, payrollId, string.IsNullOrWhiteSpace(OthersDeductionName) ? "Others" : OthersDeductionName, "Other", others);
                 }
 
                 // Always save to demo history (for Reports section)
@@ -470,7 +473,8 @@ namespace PayrollSystem.ViewModels
                     Loan = loan,
                     Late = late,
                     Undertime = under,
-                    Others = others
+                    Others = others,
+                    OthersName = string.IsNullOrWhiteSpace(OthersDeductionName) ? "Others" : OthersDeductionName
                 });
 
                 StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2} (Pending Approval)";

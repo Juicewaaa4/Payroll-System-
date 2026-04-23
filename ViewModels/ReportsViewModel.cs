@@ -22,6 +22,7 @@ namespace PayrollSystem.ViewModels
         private DateTime _startDate = _persistedStartDate ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
         private DateTime _endDate = _persistedEndDate ?? DateTime.Now;
         private string _statusMessage = "";
+        private string _payrollSearchText = "";
         private string _deductionSearchText = "";
         private EmployeeItem? _selectedDeductionEmployee;
         private bool _hasDeductionRecords;
@@ -35,9 +36,10 @@ namespace PayrollSystem.ViewModels
         private string _sortColumn = "Date";
         private bool _sortAscending = false;
 
-        public DateTime StartDate { get => _startDate; set { SetProperty(ref _startDate, value); _persistedStartDate = value; LoadData(); } }
-        public DateTime EndDate { get => _endDate; set { SetProperty(ref _endDate, value); _persistedEndDate = value; LoadData(); } }
+        public DateTime StartDate { get => _startDate; set { SetProperty(ref _startDate, value); _persistedStartDate = value; LoadData(); LoadEmployeeDeductions(); } }
+        public DateTime EndDate { get => _endDate; set { SetProperty(ref _endDate, value); _persistedEndDate = value; LoadData(); LoadEmployeeDeductions(); } }
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
+        public string PayrollSearchText { get => _payrollSearchText; set { SetProperty(ref _payrollSearchText, value); CurrentPage = 1; UpdatePagedData(); } }
 
         // Deduction history
         public string DeductionSearchText
@@ -162,7 +164,8 @@ namespace PayrollSystem.ViewModels
                         Loan = rec.Loan,
                         Late = rec.Late,
                         Undertime = rec.Undertime,
-                        Others = rec.Others
+                        Others = rec.Others,
+                        OthersName = !string.IsNullOrWhiteSpace(rec.OthersName) ? rec.OthersName : "Others"
                     });
                 }
             }
@@ -189,6 +192,13 @@ namespace PayrollSystem.ViewModels
             if (_allPayrollRecords == null) return;
             
             IEnumerable<PayrollRecord> query = _allPayrollRecords;
+
+            if (!string.IsNullOrWhiteSpace(PayrollSearchText))
+            {
+                query = query.Where(x => 
+                    x.EmployeeName.Contains(PayrollSearchText, StringComparison.OrdinalIgnoreCase) ||
+                    x.EmpNumber.Contains(PayrollSearchText, StringComparison.OrdinalIgnoreCase));
+            }
 
             switch (_sortColumn)
             {
@@ -250,7 +260,7 @@ namespace PayrollSystem.ViewModels
 
             foreach (var rec in DemoDatabase.PayrollHistory)
             {
-                if (rec.EmpNumber == empNum)
+                if (rec.EmpNumber == empNum && rec.PayrollDate >= StartDate && rec.PayrollDate <= EndDate.AddDays(1))
                 {
                     EmployeeDeductionRecords.Add(new PayrollRecord
                     {
@@ -669,5 +679,6 @@ namespace PayrollSystem.ViewModels
         public decimal Late { get; set; }
         public decimal Undertime { get; set; }
         public decimal Others { get; set; }
+        public string OthersName { get; set; } = "Others";
     }
 }

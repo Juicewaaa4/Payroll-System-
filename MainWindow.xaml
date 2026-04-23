@@ -82,6 +82,7 @@
                     <Button Content="📅  Biometrics" Command="{Binding NavigateBiometricsCommand}" Style="{StaticResource NavButton}" x:Name="NavBiometrics"/>
                     <Button Content="🖨️  Print Section" Command="{Binding NavigateBatchPrintCommand}" Style="{StaticResource NavButton}" x:Name="NavBatchPrint"/>
                     <Button Content="📋  Reports" Command="{Binding NavigateReportsCommand}" Style="{StaticResource NavButton}" x:Name="NavReports"/>
+                    <Button Content="⚙️  Settings" Command="{Binding NavigateSettingsCommand}" Style="{StaticResource NavButton}" x:Name="NavSettings"/>
                 </StackPanel>
             </DockPanel>
         </Border>

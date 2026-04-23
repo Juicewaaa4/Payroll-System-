@@ -196,27 +196,7 @@ namespace PayrollSystem.DataAccess
                       INSERT INTO departments (name, description, location, budget) VALUES ('Billiard Tenant', 'Recreation Department', 'Game Area', 50000);", conn);
                 deptCmd.ExecuteNonQuery();
             }
-
-            using var checkEmpCmd = new MySqlCommand("SELECT COUNT(*) FROM employees", conn);
-            if (Convert.ToInt32(checkEmpCmd.ExecuteScalar()) == 0)
-            {
-                using var empCmd = new MySqlCommand(
-                    @"INSERT INTO employees (emp_number, first_name, last_name, position, department_id, daily_rate, hire_date) VALUES
-                    ('EMP-0001', 'Kenneth Ariel', 'Francisco', 'Administrator', 1, 1200, '2025-06-15'),
-                    ('EMP-0002', 'Judy', 'Peralta', 'HR Manager', 1, 1500, '2025-07-01'),
-                    ('EMP-0003', 'Trecia', 'De Jesus', 'Office Administrator', 1, 1100, '2025-08-10'),
-                    ('EMP-0004', 'Alyssa Marie', 'Zamudio', 'Restaurant Manager', 2, 1000, '2025-05-20'),
-                    ('EMP-0005', 'Alliyah', 'Lobendino', 'Head Chef', 2, 950, '2025-06-01'),
-                    ('EMP-0006', 'Cristel Khaye', 'Sevilla', 'Service Staff', 2, 650, '2025-09-15'),
-                    ('EMP-0007', 'Michael', 'Villasenor', 'Kitchen Staff', 2, 600, '2025-10-01'),
-                    ('EMP-0008', 'Beverly', 'Gabriel', 'Cashier', 2, 550, '2025-11-10'),
-                    ('EMP-0009', 'Charmine', 'Resus', 'Cashier', 2, 550, '2025-07-20'),
-                    ('EMP-0010', 'Kiven', 'Paez', 'Service Staff', 2, 600, '2025-08-01'),
-                    ('EMP-0011', 'Lucky', 'Flores', 'Billiard Manager', 3, 800, '2025-06-15'),
-                    ('EMP-0012', 'Romez', 'Bautista', 'Game Attendant', 3, 500, '2025-09-01'),
-                    ('EMP-0013', 'Jerryco', 'Viador', 'Game Attendant', 3, 500, '2025-10-15');", conn);
-                empCmd.ExecuteNonQuery();
-            }
+            // Employees are no longer auto-seeded — they are managed via the app
         }
     }
 }

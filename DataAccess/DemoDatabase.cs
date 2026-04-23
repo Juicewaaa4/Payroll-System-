@@ -13,7 +13,7 @@ namespace PayrollSystem.DataAccess
     public static class DemoDatabase
     {
         private static bool _initialized = false;
-        private static readonly string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PayrollSystem");
+        private static readonly string DataFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "PayrollData");
         private static readonly string EmployeesFile = Path.Combine(DataFolder, "employees.json");
         private static readonly string PayrollFile = Path.Combine(DataFolder, "payroll_history.json");
         private static readonly string UsersFile = Path.Combine(DataFolder, "users.json");
@@ -34,6 +34,9 @@ namespace PayrollSystem.DataAccess
             try
             {
                 if (!Directory.Exists(DataFolder)) Directory.CreateDirectory(DataFolder);
+
+                // Auto-migrate from old AppData location if this is a fresh portable install
+                MigrateFromAppDataIfNeeded();
 
                 // Load Users
                 if (File.Exists(UsersFile))
@@ -57,7 +60,6 @@ namespace PayrollSystem.DataAccess
                     var loaded = JsonSerializer.Deserialize<ObservableCollection<EmployeeItem>>(File.ReadAllText(EmployeesFile));
                     if (loaded != null) Employees = loaded;
                 }
-                else SeedDefaultEmployees();
 
                 // Load Payroll History
                 if (File.Exists(PayrollFile))
@@ -78,7 +80,7 @@ namespace PayrollSystem.DataAccess
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to load offline data: {ex.Message}");
-                if (Employees.Count == 0) SeedDefaultEmployees();
+                // Employees start empty on fresh install — no demo seeding
                 if (Users.Count == 0) SeedDefaultUsers();
                 if (Departments.Count == 0) SeedDefaultDepartments();
             }
@@ -99,38 +101,40 @@ namespace PayrollSystem.DataAccess
             Departments.Add(new DepartmentItem { Id = 3, Name = "Billiard Tenant", Description = "Recreation Department" });
         }
 
-        private static void SeedDefaultEmployees()
+        /// <summary>
+        /// One-time migration: copies JSON data from old AppData location to portable PayrollData folder
+        /// </summary>
+        private static void MigrateFromAppDataIfNeeded()
         {
-            Employees.Clear();
-            var demoEmployees = new[]
+            try
             {
-                ("EMP-0001", "Kenneth Ariel", "Francisco", "Administrator", "ADMIN", 1200m),
-                ("EMP-0002", "Judy", "Peralta", "HR Manager", "ADMIN", 1500m),
-                ("EMP-0003", "Trecia", "De Jesus", "Office Administrator", "ADMIN", 1100m),
-                ("EMP-0004", "Alyssa Marie", "Zamudio", "Restaurant Manager", "Zoey's Eatery", 1000m),
-                ("EMP-0005", "Alliyah", "Lobendino", "Head Chef", "Zoey's Eatery", 950m),
-                ("EMP-0006", "Cristel Khaye", "Sevilla", "Service Staff", "Zoey's Eatery", 650m),
-                ("EMP-0007", "Michael", "Villasenor", "Kitchen Staff", "Zoey's Eatery", 600m),
-                ("EMP-0008", "Beverly", "Gabriel", "Cashier", "Zoey's Eatery", 550m),
-                ("EMP-0009", "Charmine", "Resus", "Cashier", "Zoey's Eatery", 550m),
-                ("EMP-0010", "Kiven", "Paez", "Service Staff", "Zoey's Eatery", 600m),
-                ("EMP-0011", "Lucky", "Flores", "Billiard Manager", "Billiard Tenant", 800m),
-                ("EMP-0012", "Romez", "Bautista", "Game Attendant", "Billiard Tenant", 500m),
-                ("EMP-0013", "Jerryco", "Viador", "Game Attendant", "Billiard Tenant", 500m),
-            };
+                var oldFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PayrollSystem");
+                if (!Directory.Exists(oldFolder)) return;
 
-            int id = 1;
-            foreach (var (num, fn, ln, pos, dept, rate) in demoEmployees)
-            {
-                Employees.Add(new EmployeeItem
+                // Only migrate if the new folder doesn't have employees yet
+                if (File.Exists(EmployeesFile)) return;
+
+                var jsonFiles = Directory.GetFiles(oldFolder, "*.json");
+                if (jsonFiles.Length == 0) return;
+
+                foreach (var file in jsonFiles)
                 {
-                    Id = id++, EmpNumber = num, FirstName = fn, LastName = ln,
-                    FullName = $"{fn} {ln}", Position = pos, Department = dept,
-                    DailyRate = rate, DailyRateFormatted = $"₱{rate:N2}",
-                    HireDate = DateTime.Now.AddMonths(-id), IsActive = true, Status = "Active"
-                });
+                    var destFile = Path.Combine(DataFolder, Path.GetFileName(file));
+                    if (!File.Exists(destFile))
+                    {
+                        File.Copy(file, destFile, false);
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine("Successfully migrated data from AppData to portable PayrollData folder.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Migration skipped: {ex.Message}");
             }
         }
+
+
 
         public static void SaveChanges()
         {
@@ -240,5 +244,6 @@ namespace PayrollSystem.DataAccess
         public decimal Late { get; set; }
         public decimal Undertime { get; set; }
         public decimal Others { get; set; }
+        public string OthersName { get; set; } = "Others";
     }
 }

@@ -7,8 +7,8 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="32,28,32,32">
                 <!-- Header -->
-                <TextBlock Text="Manage Users &amp; Departments" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
-                <TextBlock Text="Manage registered user accounts and organization departments" Foreground="{StaticResource TextSecondaryBrush}"
+                <TextBlock Text="Settings &amp; Tools" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
+                <TextBlock Text="Manage users, departments, backups, and generate annual reports" Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="13" Margin="0,0,0,24"/>
 
                 <!-- Status Message -->
@@ -22,12 +22,18 @@
                         <!-- Tab Header -->
                         <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12,12,0,0" Padding="20,0">
                             <StackPanel Orientation="Horizontal" Height="50">
-                                <RadioButton Content="👥 User Accounts" GroupName="SettingsTabs" FontSize="14" FontWeight="SemiBold"
+                                <RadioButton Content="👥 Users" GroupName="SettingsTabs" FontSize="14" FontWeight="SemiBold"
                                              Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,30,0" VerticalAlignment="Center"
                                              IsChecked="{Binding SelectedTabIndex, Converter={StaticResource EqualsConverter}, ConverterParameter=0}"/>
                                 <RadioButton Content="🏢 Departments" GroupName="SettingsTabs" FontSize="14" FontWeight="SemiBold"
-                                             Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"
+                                             Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,30,0" VerticalAlignment="Center"
                                              IsChecked="{Binding SelectedTabIndex, Converter={StaticResource EqualsConverter}, ConverterParameter=1}"/>
+                                <RadioButton Content="💾 Backup &amp; Restore" GroupName="SettingsTabs" FontSize="14" FontWeight="SemiBold"
+                                             Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,30,0" VerticalAlignment="Center"
+                                             IsChecked="{Binding SelectedTabIndex, Converter={StaticResource EqualsConverter}, ConverterParameter=2}"/>
+                                <RadioButton Content="🎄 13th-Month Pay" GroupName="SettingsTabs" FontSize="14" FontWeight="SemiBold"
+                                             Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"
+                                             IsChecked="{Binding SelectedTabIndex, Converter={StaticResource EqualsConverter}, ConverterParameter=3}"/>
                             </StackPanel>
                         </Border>
                         <Border Height="1" Background="{StaticResource BorderBrush}"/>
@@ -125,6 +131,237 @@
                                         </DataGridTemplateColumn>
                                     </DataGrid.Columns>
                                 </DataGrid>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- Tab 2: BACKUP & RESTORE                            -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <Grid Margin="24" Visibility="{Binding SelectedTabIndex, Converter={StaticResource IntToVisConverter}, ConverterParameter=2}">
+                            <StackPanel>
+                                <TextBlock Text="Database Backup &amp; Restore" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Create a full backup of your payroll data or restore from a previous backup file."
+                                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" Margin="0,0,0,24" TextWrapping="Wrap"/>
+
+                                <!-- Current Data Summary Card -->
+                                <Border Background="#F1F8E9" BorderBrush="#AED581" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,20">
+                                    <StackPanel>
+                                        <TextBlock Text="📊 Current Data Summary" FontSize="14" FontWeight="Bold" Foreground="#2E7D32" Margin="0,0,0,10"/>
+                                        <TextBlock Text="{Binding DataStats}" FontSize="13" Foreground="#33691E" TextWrapping="Wrap" LineHeight="22"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Last Backup Info Card -->
+                                <Border Background="#E3F2FD" BorderBrush="#90CAF9" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,24">
+                                    <StackPanel>
+                                        <TextBlock Text="🕐 Last Backup" FontSize="14" FontWeight="Bold" Foreground="#1565C0" Margin="0,0,0,10"/>
+                                        <TextBlock Text="{Binding LastBackupInfo}" FontSize="13" Foreground="#1565C0" TextWrapping="Wrap" LineHeight="22"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Action Buttons -->
+                                <Grid Margin="0,0,0,20">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Backup Button -->
+                                    <Button Grid.Column="0" Command="{Binding BackupCommand}" Cursor="Hand">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="backupBg" Background="{StaticResource PrimaryBrush}" CornerRadius="10" Padding="24,20">
+                                                    <StackPanel HorizontalAlignment="Center">
+                                                        <TextBlock Text="💾" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                                        <TextBlock Text="Backup Now" FontSize="15" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="Save all data to a JSON file" FontSize="11" Foreground="#C8E6C9" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="backupBg" Property="Background" Value="#388E3C"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+
+                                    <!-- Restore Button -->
+                                    <Button Grid.Column="2" Command="{Binding RestoreCommand}" Cursor="Hand">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="restoreBg" Background="#1565C0" CornerRadius="10" Padding="24,20">
+                                                    <StackPanel HorizontalAlignment="Center">
+                                                        <TextBlock Text="📂" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                                        <TextBlock Text="Restore from Backup" FontSize="15" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="Load data from a backup file" FontSize="11" Foreground="#BBDEFB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="restoreBg" Property="Background" Value="#0D47A1"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Grid>
+
+                                <!-- Backup Status Message -->
+                                <Border Background="#FFF3E0" BorderBrush="#FFB74D" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,0"
+                                        Visibility="{Binding BackupStatusMessage, Converter={StaticResource StringToVisConverter}}">
+                                    <TextBlock Text="{Binding BackupStatusMessage}" FontSize="13" Foreground="#E65100" TextWrapping="Wrap" LineHeight="22"/>
+                                </Border>
+
+                                <!-- Safety Tips -->
+                                <Border Background="#FAFAFA" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,20,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="💡 Backup Tips" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="• Create backups regularly, especially before making major changes" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                                        <TextBlock Text="• Keep backup files in a safe location (USB drive, cloud storage)" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,3"/>
+                                        <TextBlock Text="• Restoring a backup will REPLACE all current data" FontSize="12" Foreground="#E53935" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                        <TextBlock Text="• Default backup location: Documents / PayrollSystem Backups" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- Tab 3: 13TH-MONTH PAY                              -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <Grid Margin="24" Visibility="{Binding SelectedTabIndex, Converter={StaticResource IntToVisConverter}, ConverterParameter=3}">
+                            <StackPanel>
+                                <TextBlock Text="13th-Month Pay Generator" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                                <TextBlock Text="Compute the annual 13th-month pay for all employees based on Philippine labor law."
+                                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                                <TextBlock Text="Formula:  13th-Month Pay  =  Total Basic Salary Earned During the Year  ÷  12"
+                                           Foreground="#1565C0" FontSize="12" FontStyle="Italic" Margin="0,0,0,24"/>
+
+                                <!-- Year Selection + Generate -->
+                                <DockPanel Margin="0,0,0,20">
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="Year:" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <ComboBox ItemsSource="{Binding AvailableYears}" SelectedItem="{Binding SelectedYear}"
+                                                  Style="{StaticResource ModernComboBox}" Width="120" FontSize="14"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                        <!-- Export Button -->
+                                        <Button Command="{Binding Export13thMonthCommand}" Cursor="Hand" Margin="0,0,12,0"
+                                                Visibility="{Binding HasThirteenthMonthData, Converter={StaticResource BoolToVisConverter}}">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="exportBg" Background="#1565C0" CornerRadius="6" Padding="16,8">
+                                                        <TextBlock Text="📥 Export to Excel" Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="exportBg" Property="Background" Value="#0D47A1"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+
+                                        <!-- Generate Button -->
+                                        <Button Command="{Binding Generate13thMonthCommand}" Cursor="Hand">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="genBg" Background="{StaticResource PrimaryBrush}" CornerRadius="6" Padding="16,8">
+                                                        <TextBlock Text="🎄 Generate 13th-Month Pay" Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="genBg" Property="Background" Value="#388E3C"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <!-- Status Message -->
+                                <TextBlock Text="{Binding ThirteenthMonthStatus}" Foreground="{StaticResource PrimaryBrush}"
+                                           FontSize="13" FontWeight="SemiBold" Margin="0,0,0,16" TextWrapping="Wrap"
+                                           Visibility="{Binding ThirteenthMonthStatus, Converter={StaticResource StringToVisConverter}}"/>
+
+                                <!-- Summary Cards (visible only when data exists) -->
+                                <Grid Margin="0,0,0,20" Visibility="{Binding HasThirteenthMonthData, Converter={StaticResource BoolToVisConverter}}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Employees Card -->
+                                    <Border Grid.Column="0" Style="{StaticResource StatCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="👥" FontSize="22" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding TotalEmployeesComputed}" Style="{StaticResource StatValue}"/>
+                                            <TextBlock Text="Employees" Style="{StaticResource StatLabel}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Total Basic Salary Card -->
+                                    <Border Grid.Column="2" Style="{StaticResource StatCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="💵" FontSize="22" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding TotalBasicSalary}" Style="{StaticResource StatValue}" FontSize="22"/>
+                                            <TextBlock Text="Total Basic Salary" Style="{StaticResource StatLabel}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 13th Month Total Card (highlighted) -->
+                                    <Border Grid.Column="4" Background="#E8F5E9" BorderBrush="#66BB6A" BorderThickness="2" CornerRadius="10" Padding="20">
+                                        <StackPanel>
+                                            <TextBlock Text="🎄" FontSize="22" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding TotalThirteenthMonthPay}" FontFamily="{StaticResource HeadingFont}"
+                                                       FontSize="22" FontWeight="Bold" Foreground="#2E7D32"/>
+                                            <TextBlock Text="Total 13th-Month Pay" Style="{StaticResource StatLabel}" Foreground="#388E3C"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Results DataGrid -->
+                                <DataGrid ItemsSource="{Binding ThirteenthMonthRecords}"
+                                          Style="{StaticResource ModernDataGrid}"
+                                          ColumnHeaderStyle="{StaticResource ModernDataGridColumnHeader}"
+                                          CellStyle="{StaticResource ModernDataGridCell}"
+                                          RowStyle="{StaticResource ModernDataGridRow}"
+                                          MaxHeight="400"
+                                          Visibility="{Binding HasThirteenthMonthData, Converter={StaticResource BoolToVisConverter}}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="EMP #" Binding="{Binding EmpNumber}" Width="100"/>
+                                        <DataGridTextColumn Header="Employee Name" Binding="{Binding EmployeeName}" Width="*"/>
+                                        <DataGridTextColumn Header="Payroll Count" Binding="{Binding PayrollCount}" Width="120"/>
+                                        <DataGridTextColumn Header="Total Basic Salary" Binding="{Binding TotalBasicSalaryFormatted}" Width="160"/>
+                                        <DataGridTextColumn Header="13th-Month Pay" Binding="{Binding ThirteenthMonthPayFormatted}" Width="160">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                    <Setter Property="Foreground" Value="#2E7D32"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <!-- Empty state message when no data -->
+                                <Border Background="#FAFAFA" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="10" Padding="40" Margin="0,0,0,0"
+                                        HorizontalAlignment="Center"
+                                        Visibility="{Binding HasThirteenthMonthData, Converter={StaticResource BoolToVisConverter}, ConverterParameter=Invert}">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="🎄" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                        <TextBlock Text="Select a year and click Generate" FontSize="15" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                        <TextBlock Text="The system will compute each employee's 13th-month pay from their payroll history."
+                                                   FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="400"/>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </Grid>
                     </StackPanel>

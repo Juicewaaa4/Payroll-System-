@@ -46,6 +46,7 @@ namespace PayrollSystem.ViewModels
         private string _late = "0.00";
         private string _undertime = "0.00";
         private string _others = "0.00";
+        private string _othersName = "Other Deductions";
         private string _totalDeductions = "0.00";
         private string _netPay = "0.00";
 
@@ -103,6 +104,7 @@ namespace PayrollSystem.ViewModels
         public string Late { get => _late; set { SetProperty(ref _late, value); RecomputeDeductions(); } }
         public string Undertime { get => _undertime; set { SetProperty(ref _undertime, value); RecomputeDeductions(); } }
         public string Others { get => _others; set { SetProperty(ref _others, value); RecomputeDeductions(); } }
+        public string OthersName { get => _othersName; set => SetProperty(ref _othersName, value); }
         public string TotalDeductions { get => _totalDeductions; set => SetProperty(ref _totalDeductions, value); }
         public string NetPay { get => _netPay; set => SetProperty(ref _netPay, value); }
 
@@ -228,6 +230,7 @@ namespace PayrollSystem.ViewModels
                 _lateInput = lastRecord.Late > 0 ? lastRecord.Late.ToString("0.##") : "";
                 _undertimeInput = lastRecord.Undertime > 0 ? lastRecord.Undertime.ToString("0.##") : "";
                 _othersInput = lastRecord.Others > 0 ? lastRecord.Others.ToString("0.##") : "";
+                _othersName = !string.IsNullOrWhiteSpace(lastRecord.OthersName) ? lastRecord.OthersName : "Other Deductions";
 
                 OnPropertyChanged(nameof(PeriodStart));
                 OnPropertyChanged(nameof(PeriodEnd));
@@ -240,6 +243,7 @@ namespace PayrollSystem.ViewModels
                 OnPropertyChanged(nameof(LateInput));
                 OnPropertyChanged(nameof(UndertimeInput));
                 OnPropertyChanged(nameof(OthersInput));
+                OnPropertyChanged(nameof(OthersName));
 
                 UpdatePeriodText();
             }
@@ -520,7 +524,7 @@ namespace PayrollSystem.ViewModels
                 dRg.Rows.Add(CreateDeductionRow("PhilHealth Contribution", Philhealth));
                 dRg.Rows.Add(CreateDeductionRow("Pag-IBIG Contribution", Pagibig));
                 dRg.Rows.Add(CreateDeductionRow("Loan", Loan));
-                dRg.Rows.Add(CreateDeductionRow("Other Deductions", Others));
+                dRg.Rows.Add(CreateDeductionRow(string.IsNullOrWhiteSpace(OthersName) ? "Other Deductions" : OthersName, Others));
 
                 var df = new System.Windows.Documents.TableRow();
                 var dTotalCell = CreateCell("Total Deductions", System.Windows.FontWeights.Bold, lightGray, System.Windows.Media.Brushes.Black, 1, System.Windows.TextAlignment.Left, 11, true);

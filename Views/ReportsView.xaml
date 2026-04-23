@@ -49,6 +49,13 @@
                         <TextBlock Text="TO DATE" Style="{StaticResource FieldLabel}"/>
                         <DatePicker SelectedDate="{Binding EndDate}" Width="150" FontSize="13"/>
                     </StackPanel>
+                    
+                    <StackPanel Margin="0,0,20,0">
+                        <TextBlock Text="SEARCH EMPLOYEE" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Style="{StaticResource ModernTextBox}" Width="180"
+                                 Text="{Binding PayrollSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Type name or ID to filter records below"/>
+                    </StackPanel>
 
                     <!-- Export Button -->
                     <Button VerticalAlignment="Bottom" Cursor="Hand" Command="{Binding ExportExcelCommand}">
@@ -107,7 +114,17 @@
                             <DataGridTextColumn Header="Loan" Binding="{Binding Loan, StringFormat=₱{0:N2}}" Width="65"/>
                             <DataGridTextColumn Header="Late" Binding="{Binding Late, StringFormat=₱{0:N2}}" Width="60"/>
                             <DataGridTextColumn Header="U.T." Binding="{Binding Undertime, StringFormat=₱{0:N2}}" Width="60"/>
-                            <DataGridTextColumn Header="Others" Binding="{Binding Others, StringFormat=₱{0:N2}}" Width="65"/>
+                            <DataGridTemplateColumn Header="Other Ded." Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextAlignment="Right" Padding="5,0">
+                                            <Run Text="{Binding OthersName}"/>
+                                            <Run Text=": ₱"/>
+                                            <Run Text="{Binding Others, StringFormat=N2}"/>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Total Ded." Binding="{Binding Deductions}" Width="90"/>
                             <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="95"/>
                             <DataGridTemplateColumn Header="Status" Width="90">
@@ -257,7 +274,17 @@
                                     <DataGridTextColumn Header="Loan" Binding="{Binding Loan, StringFormat=₱{0:N2}}" Width="65"/>
                                     <DataGridTextColumn Header="Late" Binding="{Binding Late, StringFormat=₱{0:N2}}" Width="60"/>
                                     <DataGridTextColumn Header="Undertime" Binding="{Binding Undertime, StringFormat=₱{0:N2}}" Width="75"/>
-                                    <DataGridTextColumn Header="Others" Binding="{Binding Others, StringFormat=₱{0:N2}}" Width="65"/>
+                                    <DataGridTemplateColumn Header="Other Ded." Width="120">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock TextAlignment="Right" Padding="5,0">
+                                                    <Run Text="{Binding OthersName}"/>
+                                                    <Run Text=": ₱"/>
+                                                    <Run Text="{Binding Others, StringFormat=N2}"/>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
                                     <DataGridTextColumn Header="Total Ded." Binding="{Binding Deductions}" Width="85"/>
                                     <DataGridTextColumn Header="Net Pay" Binding="{Binding NetPay}" Width="*"/>
                                 </DataGrid.Columns>
