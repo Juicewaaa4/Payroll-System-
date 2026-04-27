@@ -132,6 +132,8 @@ namespace PayrollSystem.ViewModels
                 DemoDatabase.PayrollHistory.Remove(_pendingDeleteRecord.Record);
                 PayrollRecords.Remove(_pendingDeleteRecord);
                 StatusMessage = $"✓ Successfully deleted payroll record for {_pendingDeleteRecord.Record.EmployeeName}.";
+                DemoDatabase.LogAction("Payroll Deleted",
+                    $"{_pendingDeleteRecord.Record.EmployeeName} ({_pendingDeleteRecord.Record.EmpNumber}) — Net: {_pendingDeleteRecord.Record.NetPay}");
                 _pendingDeleteRecord = null;
             }
             IsDeleteModalVisible = false;
@@ -145,6 +147,8 @@ namespace PayrollSystem.ViewModels
             
             // Sync with memory database to reflect globally
             DemoDatabase.SaveChanges(); 
+            DemoDatabase.LogAction("Payroll Approved",
+                $"{record.Record.EmployeeName} ({record.Record.EmpNumber}) — Net: {record.Record.NetPay} marked as Paid.");
 
             // Hard refresh local binding
             var idx = PayrollRecords.IndexOf(record);

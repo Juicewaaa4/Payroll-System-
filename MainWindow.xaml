@@ -7,7 +7,7 @@
         Height="720" Width="1200"
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource BackgroundBrush}"
+        Background="{DynamicResource BackgroundBrush}"
         Icon="/Logo/Payroll Icon.png">
 
     <Window.Resources>
@@ -44,7 +44,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- ═══ SIDEBAR ═══ -->
-        <Border Grid.Column="0" Background="{StaticResource SidebarBrush}">
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}">
             <DockPanel>
                 <!-- Logo / Brand -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,24,0,18">
@@ -88,48 +88,52 @@
         </Border>
 
         <!-- ═══ MAIN CONTENT ═══ -->
-        <Border Grid.Column="1" Background="{StaticResource BackgroundBrush}">
+        <Border Grid.Column="1" Background="{DynamicResource BackgroundBrush}">
             <ContentControl Content="{Binding CurrentView}" Margin="0"/>
         </Border>
 
         <!-- ═══ GLOBAL HELP MODAL ═══ -->
-        <Border Grid.Column="0" Grid.ColumnSpan="2" Background="#80000000" Visibility="{Binding IsHelpModalVisible, Converter={StaticResource BoolToVisConverter}}" Panel.ZIndex="100">
-            <Border Background="White" CornerRadius="12" Padding="40" Width="600" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource ModalOverlayBrush}" Visibility="{Binding IsHelpModalVisible, Converter={StaticResource BoolToVisConverter}}" Panel.ZIndex="100">
+            <Border Background="{DynamicResource ModalBrush}" CornerRadius="12" Padding="40" Width="600" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
                     <!-- Header -->
                     <Grid Margin="0,0,0,20">
-                        <TextBlock Text="📖 How to Process Payroll" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                        <Button Content="❌" Command="{Binding ToggleHelpCommand}" Background="Transparent" BorderThickness="0" Foreground="#757575" Cursor="Hand" FontSize="16" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip="Close Help"/>
+                        <TextBlock Text="📖 How to Process Payroll" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <Button Content="❌" Command="{Binding ToggleHelpCommand}" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextSecondaryBrush}" Cursor="Hand" FontSize="16" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip="Close Help"/>
                     </Grid>
 
-                    <Border Height="1" Background="#E0E0E0" Margin="0,0,0,20"/>
+                    <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,20"/>
 
                     <!-- Steps -->
                     <StackPanel Margin="0,0,0,10">
-                        <TextBlock Text="Step 1: Import Biometrics (Once per period)" FontWeight="Bold" FontSize="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Step 1: Import Biometrics (Once per period)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,4"/>
                         <TextBlock Text="Go to the 'Biometrics' tab on the left sidebar and click the Import button. Upload the Attendance Report (.xls) from your ZKTeco machine. The system will automatically detect the dates and attendance records." 
-                                   TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="20,0,0,15" LineHeight="20"/>
+                                   TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,15" LineHeight="20"/>
 
-                        <TextBlock Text="Step 2: Generate Computations" FontWeight="Bold" FontSize="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Step 2: Generate Computations" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,4"/>
                         <TextBlock Text="Proceed to the 'Payroll' tab. The system automatically reads your imported biometrics data. Simply search and select an employee from the dropdown. The system will auto-calculate their Basic Pay, Undertime, Late Deductions, and Net Pay based on their daily rate." 
-                                   TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="20,0,0,15" LineHeight="20"/>
+                                   TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,15" LineHeight="20"/>
 
-                        <TextBlock Text="Step 3: Save the Record" FontWeight="Bold" FontSize="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Step 3: Save the Record" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,4"/>
                         <TextBlock Text="In the 'Payroll' tab, review the deductions and add any Overtime, Bonuses, or Loans if applicable. Once finalized, click the green 'Process Payroll' button. This securely saves the record to the database." 
-                                   TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="20,0,0,15" LineHeight="20"/>
+                                   TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,15" LineHeight="20"/>
 
-                        <TextBlock Text="Step 4: Print Payslips" FontWeight="Bold" FontSize="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Step 4: Print Payslips" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,4"/>
                         <TextBlock Text="Go to the 'Print Section' tab. You will see a list of all processed payrolls. You can click 'Print All' to print everything at once, or select specific employees to print. You also have the option to Edit or Delete a record here before printing." 
-                                   TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="20,0,0,20" LineHeight="20"/>
+                                   TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="20,0,0,20" LineHeight="20"/>
                     </StackPanel>
 
                     <!-- Footer -->
-                    <Border Background="#F1F8E9" BorderBrush="#AED581" BorderThickness="1" CornerRadius="6" Padding="15">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock Text="💡" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Shortcut: You can skip Step 1 if you are only processing manual adjustments without an Excel file!" 
-                                       FontSize="12" Foreground="#33691E" FontStyle="Italic" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                        </StackPanel>
+                    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="6" Padding="15">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="💡" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="Shortcut: You can skip Step 1 if you are only processing manual adjustments without an Excel file!" 
+                                       FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" FontStyle="Italic" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        </Grid>
                     </Border>
                     
                     <Button Content="Salamat Juswa!" Command="{Binding ToggleHelpCommand}" Style="{StaticResource PrimaryButton}"

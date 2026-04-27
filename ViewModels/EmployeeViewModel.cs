@@ -297,6 +297,8 @@ namespace PayrollSystem.ViewModels
 
                     IsFormVisible = false;
                     FormError = "";
+                    DemoDatabase.LogAction(IsEditing ? "Employee Edited" : "Employee Added",
+                        $"{FormFirstName} {FormLastName} — {FormPosition}, ₱{rate:N2}/day ({FormDepartment})");
                     LoadEmployees();
                 }
                 else
@@ -360,6 +362,8 @@ namespace PayrollSystem.ViewModels
                         Departments.Add(FormDepartment);
                     
                     DemoDatabase.SaveChanges(); // Persist offline data permanently!
+                    DemoDatabase.LogAction(IsEditing ? "Employee Edited" : "Employee Added",
+                        $"{FormFirstName} {FormLastName} — {FormPosition}, ₱{rate:N2}/day ({FormDepartment})");
                     FilterEmployees();
                 }
             }
@@ -398,6 +402,7 @@ namespace PayrollSystem.ViewModels
                     if (demoEmp != null) DemoDatabase.Employees.Remove(demoEmp);
                     
                     DemoDatabase.SaveChanges(); // Persist offline delete
+                    DemoDatabase.LogAction("Employee Deleted", $"{emp.FullName} ({emp.EmpNumber}) removed from system.");
                     FilterEmployees();
                 }
             }

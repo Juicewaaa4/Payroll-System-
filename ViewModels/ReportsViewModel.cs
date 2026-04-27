@@ -21,6 +21,7 @@ namespace PayrollSystem.ViewModels
 
         private DateTime _startDate = _persistedStartDate ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
         private DateTime _endDate = _persistedEndDate ?? DateTime.Now;
+        private DateTime _auditDate = DateTime.Now;
         private string _statusMessage = "";
         private string _payrollSearchText = "";
         private string _deductionSearchText = "";
@@ -38,6 +39,7 @@ namespace PayrollSystem.ViewModels
 
         public DateTime StartDate { get => _startDate; set { SetProperty(ref _startDate, value); _persistedStartDate = value; LoadData(); LoadEmployeeDeductions(); } }
         public DateTime EndDate { get => _endDate; set { SetProperty(ref _endDate, value); _persistedEndDate = value; LoadData(); LoadEmployeeDeductions(); } }
+        public DateTime AuditDate { get => _auditDate; set { SetProperty(ref _auditDate, value); FilterAuditLogs(); } }
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
         public string PayrollSearchText { get => _payrollSearchText; set { SetProperty(ref _payrollSearchText, value); CurrentPage = 1; UpdatePagedData(); } }
 
@@ -71,6 +73,10 @@ namespace PayrollSystem.ViewModels
         public ObservableCollection<EmployeeItem> AllEmployees { get; } = new();
         public ObservableCollection<EmployeeItem> FilteredDeductionEmployees { get; } = new();
         public ObservableCollection<PayrollRecord> EmployeeDeductionRecords { get; } = new();
+        public ObservableCollection<AuditLogRecord> FilteredAuditLogs { get; } = new();
+
+        private bool _hasAuditLogs;
+        public bool HasAuditLogs { get => _hasAuditLogs; set => SetProperty(ref _hasAuditLogs, value); }
 
         public ICommand ExportExcelCommand { get; }
         public ICommand ExportDeductionsExcelCommand { get; }
@@ -95,6 +101,7 @@ namespace PayrollSystem.ViewModels
             DemoDatabase.Initialize();
             AllEmployees.Clear();
             foreach (var emp in DemoDatabase.Employees) AllEmployees.Add(emp);
+            FilterAuditLogs();
             FilterDeductionEmployees();
 
             try
@@ -292,6 +299,20 @@ namespace PayrollSystem.ViewModels
             }
 
             HasDeductionRecords = EmployeeDeductionRecords.Count > 0;
+        }
+
+        private void FilterAuditLogs()
+        {
+            FilteredAuditLogs.Clear();
+            DemoDatabase.Initialize();
+
+            IEnumerable<AuditLogRecord> query = DemoDatabase.AuditLogs
+                .Where(a => a.Timestamp.Date == AuditDate.Date);
+
+            foreach (var log in query.OrderByDescending(a => a.Timestamp).Take(100))
+                FilteredAuditLogs.Add(log);
+
+            HasAuditLogs = FilteredAuditLogs.Count > 0;
         }
 
         private void ExportToExcel()

@@ -23,6 +23,13 @@ namespace PayrollSystem.ViewModels
         public string Greeting { get => _greeting; set => SetProperty(ref _greeting, value); }
 
         public ObservableCollection<RecentActivity> RecentActivities { get; } = new();
+        public ObservableCollection<MonthlyExpense> MonthlyExpenses { get; } = new();
+
+        // Notification / Reminder
+        private string _notificationMessage = "";
+        private bool _isNotificationVisible;
+        public string NotificationMessage { get => _notificationMessage; set => SetProperty(ref _notificationMessage, value); }
+        public bool IsNotificationVisible { get => _isNotificationVisible; set => SetProperty(ref _isNotificationVisible, value); }
 
         public DashboardViewModel()
         {
@@ -50,6 +57,8 @@ namespace PayrollSystem.ViewModels
 
                     PendingPayroll = DemoDatabase.PayrollHistory.Count(p => p.Status == "Pending").ToString();
                     LoadDemoActivities();
+                    LoadMonthlyExpenses();
+                    CheckPaydayReminder();
                     return;
                 }
 
@@ -74,6 +83,8 @@ namespace PayrollSystem.ViewModels
 
                 // Recent activities
                 LoadRecentActivities(conn);
+                LoadMonthlyExpenses();
+                CheckPaydayReminder();
             }
             catch
             {
@@ -87,7 +98,81 @@ namespace PayrollSystem.ViewModels
 
                 PendingPayroll = DemoDatabase.PayrollHistory.Count(p => p.Status == "Pending").ToString();
                 LoadDemoActivities();
+                LoadMonthlyExpenses();
+                CheckPaydayReminder();
             }
+        }
+
+        private void LoadMonthlyExpenses()
+        {
+            MonthlyExpenses.Clear();
+            DemoDatabase.Initialize();
+
+            var now = DateTime.Now;
+            decimal maxVal = 1; // avoid div by zero
+
+            // Compute totals for each of the last 6 months
+            var monthData = new System.Collections.Generic.List<MonthlyExpense>();
+            for (int i = 5; i >= 0; i--)
+            {
+                var targetMonth = now.AddMonths(-i);
+                var total = DemoDatabase.PayrollHistory
+                    .Where(p => p.PayrollDate.Month == targetMonth.Month && p.PayrollDate.Year == targetMonth.Year)
+                    .Sum(p => p.NetPayRaw);
+
+                monthData.Add(new MonthlyExpense
+                {
+                    MonthLabel = targetMonth.ToString("MMM"),
+                    YearLabel = targetMonth.ToString("yyyy"),
+                    TotalExpense = total,
+                    TotalFormatted = $"₱{total:N0}"
+                });
+
+                if (total > maxVal) maxVal = total;
+            }
+
+            // Normalize bar heights (max = 180px)
+            foreach (var m in monthData)
+            {
+                m.BarHeight = maxVal > 0 ? (double)(m.TotalExpense / maxVal) * 180.0 : 5;
+                if (m.BarHeight < 5) m.BarHeight = 5; // minimum visible bar
+                MonthlyExpenses.Add(m);
+            }
+        }
+
+        private void CheckPaydayReminder()
+        {
+            var day = DateTime.Now.Day;
+            // Near mid-month payday (13th-15th) or end-of-month payday (28th-31st)
+            if (day >= 13 && day <= 15)
+            {
+                NotificationMessage = "📋 Reminder: Mid-month payday is approaching! Make sure to import biometrics and process payroll.";
+                IsNotificationVisible = true;
+            }
+            else if (day >= 28)
+            {
+                NotificationMessage = "📋 Reminder: End-of-month payday is approaching! Don't forget to finalize payroll processing.";
+                IsNotificationVisible = true;
+            }
+            else
+            {
+                // Check if there are pending payrolls
+                var pending = DemoDatabase.PayrollHistory.Count(p => p.Status == "Pending");
+                if (pending > 0)
+                {
+                    NotificationMessage = $"⚠️ You have {pending} pending payroll record(s) awaiting approval. Go to Batch Print to approve.";
+                    IsNotificationVisible = true;
+                }
+                else
+                {
+                    IsNotificationVisible = false;
+                }
+            }
+        }
+
+        public void DismissNotification()
+        {
+            IsNotificationVisible = false;
         }
 
         private void LoadRecentActivities(MySqlConnection conn)
@@ -142,5 +227,14 @@ namespace PayrollSystem.ViewModels
         public string Amount { get; set; } = "";
         public string Date { get; set; } = "";
         public string Status { get; set; } = "";
+    }
+
+    public class MonthlyExpense
+    {
+        public string MonthLabel { get; set; } = "";
+        public string YearLabel { get; set; } = "";
+        public decimal TotalExpense { get; set; }
+        public string TotalFormatted { get; set; } = "₱0";
+        public double BarHeight { get; set; } = 5;
     }
 }

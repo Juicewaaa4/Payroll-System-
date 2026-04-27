@@ -478,6 +478,8 @@ namespace PayrollSystem.ViewModels
                 });
 
                 StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2} (Pending Approval)";
+                DemoDatabase.LogAction("Payroll Processed",
+                    $"{SelectedEmployee.FullName} ({SelectedEmployee.EmpNumber}) — Gross: ₱{gross:N2}, Deductions: ₱{totalDed:N2}, Net: ₱{net:N2}");
                 
                 // Signal navigation to Payslip section
                 PayrollProcessed?.Invoke(SelectedEmployee);

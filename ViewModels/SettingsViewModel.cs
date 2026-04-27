@@ -32,6 +32,20 @@ namespace PayrollSystem.ViewModels
         private bool _isDeptFormVisible;
         public bool IsDeptFormVisible { get => _isDeptFormVisible; set => SetProperty(ref _isDeptFormVisible, value); }
 
+        // --- Appearance ---
+        public bool IsDarkMode
+        {
+            get => App.IsDarkMode();
+            set
+            {
+                if (App.IsDarkMode() != value)
+                {
+                    App.ChangeTheme(value);
+                    OnPropertyChanged(nameof(IsDarkMode));
+                }
+            }
+        }
+
         // --- Current Tab (0=Users, 1=Departments, 2=Backup, 3=13thMonth)
         private int _selectedTabIndex = 0;
         public int SelectedTabIndex

@@ -19,12 +19,14 @@ namespace PayrollSystem.DataAccess
         private static readonly string UsersFile = Path.Combine(DataFolder, "users.json");
         private static readonly string DepartmentsFile = Path.Combine(DataFolder, "departments.json");
         private static readonly string BiometricsFile = Path.Combine(DataFolder, "biometrics_imports.json");
+        private static readonly string AuditFile = Path.Combine(DataFolder, "audit_logs.json");
 
         public static ObservableCollection<EmployeeItem> Employees { get; private set; } = new();
         public static ObservableCollection<PayrollHistoryRecord> PayrollHistory { get; private set; } = new();
         public static ObservableCollection<UserItem> Users { get; private set; } = new();
         public static ObservableCollection<DepartmentItem> Departments { get; private set; } = new();
         public static ObservableCollection<BiometricsImportRecord> BiometricsImports { get; private set; } = new();
+        public static ObservableCollection<AuditLogRecord> AuditLogs { get; private set; } = new();
 
         public static void Initialize()
         {
@@ -73,6 +75,13 @@ namespace PayrollSystem.DataAccess
                 {
                     var loaded = JsonSerializer.Deserialize<ObservableCollection<BiometricsImportRecord>>(File.ReadAllText(BiometricsFile));
                     if (loaded != null) BiometricsImports = loaded;
+                }
+
+                // Load Audit Logs
+                if (File.Exists(AuditFile))
+                {
+                    var loaded = JsonSerializer.Deserialize<ObservableCollection<AuditLogRecord>>(File.ReadAllText(AuditFile));
+                    if (loaded != null) AuditLogs = loaded;
                 }
 
                 SaveChanges(); // Write initial files if they didn't exist
@@ -148,6 +157,7 @@ namespace PayrollSystem.DataAccess
                 File.WriteAllText(UsersFile, JsonSerializer.Serialize(Users, opts));
                 File.WriteAllText(DepartmentsFile, JsonSerializer.Serialize(Departments, opts));
                 File.WriteAllText(BiometricsFile, JsonSerializer.Serialize(BiometricsImports, opts));
+                File.WriteAllText(AuditFile, JsonSerializer.Serialize(AuditLogs, opts));
             }
             catch (Exception ex)
             {
@@ -159,6 +169,26 @@ namespace PayrollSystem.DataAccess
         {
             PayrollHistory.Insert(0, record); // newest first
             SaveChanges(); // Auto-save after inserting
+        }
+
+        /// <summary>
+        /// Logs an action to the Audit Trail for accountability tracking.
+        /// </summary>
+        public static void LogAction(string action, string description)
+        {
+            Initialize();
+            AuditLogs.Insert(0, new AuditLogRecord
+            {
+                Id = AuditLogs.Count > 0 ? AuditLogs.Max(a => a.Id) + 1 : 1,
+                Timestamp = DateTime.Now,
+                Action = action,
+                Description = description
+            });
+
+            // Keep only the latest 500 entries to avoid bloating
+            while (AuditLogs.Count > 500) AuditLogs.RemoveAt(AuditLogs.Count - 1);
+
+            SaveChanges();
         }
     }
 
@@ -245,5 +275,14 @@ namespace PayrollSystem.DataAccess
         public decimal Undertime { get; set; }
         public decimal Others { get; set; }
         public string OthersName { get; set; } = "Others";
+    }
+
+    public class AuditLogRecord
+    {
+        public int Id { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.Now;
+        public string TimestampFormatted => Timestamp.ToString("MMM dd, yyyy  h:mm:ss tt");
+        public string Action { get; set; } = "";
+        public string Description { get; set; } = "";
     }
 }
