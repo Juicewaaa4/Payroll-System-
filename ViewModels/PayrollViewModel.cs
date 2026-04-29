@@ -453,6 +453,7 @@ namespace PayrollSystem.ViewModels
                     if(others > 0) SaveDeduction(conn, payrollId, string.IsNullOrWhiteSpace(OthersDeductionName) ? "Others" : OthersDeductionName, "Other", others);
                     
                     StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2} (Pending Approval)";
+                    ShowToast("Payroll Processed Successfully!");
                     
                     // Signal navigation to Payslip section
                     PayrollProcessed?.Invoke(SelectedEmployee);

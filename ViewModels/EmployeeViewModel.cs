@@ -266,6 +266,7 @@ namespace PayrollSystem.ViewModels
                 IsFormVisible = false;
                 FormError = "";
                 LoadEmployees();
+                ShowToast("Employee saved successfully!");
             }
             catch (Exception ex)
             {

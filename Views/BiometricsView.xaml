@@ -151,5 +151,17 @@
                 </StackPanel>
             </Border>
         </Border>
+        <!-- ═══ LOADING OVERLAY ═══ -->
+        <Border Background="{DynamicResource ModalOverlayBrush}" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisConverter}}" Panel.ZIndex="100">
+            <Border Background="{DynamicResource ModalBrush}" CornerRadius="12" Padding="40" Width="300" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <!-- Simple pure-XAML spinner -->
+                    <TextBlock Text="⏳" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                    <TextBlock Text="Reading Excel File..." FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                    <TextBlock Text="This may take a few seconds depending on the file size." FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </Border>
+
     </Grid>
 </UserControl>

@@ -247,14 +247,14 @@ namespace PayrollSystem.ViewModels
             _editingRecord.Record.NetPayRaw = net;
             _editingRecord.Record.NetPay = $"₱{net:N2}";
 
-            // Sync to MySQL Database
+            // Sync to SQLite Database
             if (DatabaseHelper.TestConnection())
             {
                 try
                 {
                     using var conn = DatabaseHelper.GetConnection();
                     conn.Open();
-                    // Update payroll record by its MySQL ID
+                    // Update payroll record by its Database ID
                     using var cmd = new SqliteCommand(@"UPDATE payroll SET 
                         gross_salary=@gross, total_deductions=@ded, net_pay=@net 
                         WHERE id=@id", conn);

@@ -46,6 +46,38 @@ namespace PayrollSystem.ViewModels
             set => SetProperty(ref _isHelpModalVisible, value);
         }
 
+        // --- Toast Notification ---
+        private string _toastMessage = "";
+        private string _toastIcon = "✅";
+        private bool _isToastVisible = false;
+
+        public string ToastMessage
+        {
+            get => _toastMessage;
+            set => SetProperty(ref _toastMessage, value);
+        }
+
+        public string ToastIcon
+        {
+            get => _toastIcon;
+            set => SetProperty(ref _toastIcon, value);
+        }
+
+        public bool IsToastVisible
+        {
+            get => _isToastVisible;
+            set => SetProperty(ref _isToastVisible, value);
+        }
+
+        public async void ShowToastNotification(string message, string icon)
+        {
+            ToastMessage = message;
+            ToastIcon = icon;
+            IsToastVisible = true;
+            await System.Threading.Tasks.Task.Delay(3000);
+            IsToastVisible = false;
+        }
+
         // --- Appearance (Dark Mode) ---
         public bool IsDarkMode
         {
@@ -92,6 +124,16 @@ namespace PayrollSystem.ViewModels
             _batchPrintViewModel = new BatchPrintViewModel();
             _reportsViewModel = new ReportsViewModel();
             _settingsViewModel = new SettingsViewModel();
+
+            // Subscribe to Toast requests
+            _dashboardViewModel.ToastRequested += (s, e) => ShowToastNotification(e.Message, e.Icon);
+            _employeeViewModel.ToastRequested += (s, e) => ShowToastNotification(e.Message, e.Icon);
+            _payrollViewModel.ToastRequested += (s, e) => ShowToastNotification(e.Message, e.Icon);
+            _payslipViewModel.ToastRequested += (s, e) => ShowToastNotification(e.Message, e.Icon);
+            _biometricsViewModel.ToastRequested += (s, e) => ShowToastNotification(e.Message, e.Icon);
+            _batchPrintViewModel.ToastRequested += (s, e) => ShowToastNotification(e.Message, e.Icon);
+            _reportsViewModel.ToastRequested += (s, e) => ShowToastNotification(e.Message, e.Icon);
+            _settingsViewModel.ToastRequested += (s, e) => ShowToastNotification(e.Message, e.Icon);
 
             // Auto-navigate to Payslip after processing payroll
             _payrollViewModel.PayrollProcessed += emp => 

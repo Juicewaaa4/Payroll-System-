@@ -24,5 +24,24 @@ namespace PayrollSystem.ViewModels
         }
 
         public virtual bool HasUnsavedChanges => false;
+
+        public event System.EventHandler<ToastEventArgs>? ToastRequested;
+
+        protected void ShowToast(string message, string icon = "✅")
+        {
+            ToastRequested?.Invoke(this, new ToastEventArgs(message, icon));
+        }
+    }
+
+    public class ToastEventArgs : System.EventArgs
+    {
+        public string Message { get; }
+        public string Icon { get; }
+
+        public ToastEventArgs(string message, string icon)
+        {
+            Message = message;
+            Icon = icon;
+        }
     }
 }

@@ -69,10 +69,10 @@ namespace PayrollSystem.ViewModels
         // ═══════════════════════════════════════════════════════════
         // BACKUP & RESTORE properties
         // ═══════════════════════════════════════════════════════════
-        private string _backupStatusMessage = "Backup & Restore is now managed via MySQL.";
+        private string _backupStatusMessage = "Automatic backups are enabled. Database is backed up automatically on exit.";
         public string BackupStatusMessage { get => _backupStatusMessage; set => SetProperty(ref _backupStatusMessage, value); }
 
-        private string _lastBackupInfo = "Use MySQL tools (e.g. phpMyAdmin, mysqldump) to manage backups.";
+        private string _lastBackupInfo = "Backups are stored in the 'Backups' folder beside the executable.";
         public string LastBackupInfo { get => _lastBackupInfo; set => SetProperty(ref _lastBackupInfo, value); }
 
         private string _dataStats = "";
@@ -258,6 +258,7 @@ namespace PayrollSystem.ViewModels
 
                 IsUserFormVisible = false;
                 StatusMessage = "User saved successfully.";
+                ShowToast("User saved successfully!");
                 LoadUsers();
             }
             catch (Exception ex)
@@ -427,12 +428,22 @@ namespace PayrollSystem.ViewModels
 
         private void PerformBackup()
         {
-            BackupStatusMessage = "Backup & Restore is now managed via MySQL directly.";
+            try 
+            {
+                DataAccess.DatabaseHelper.BackupDatabase();
+                BackupStatusMessage = "✓ Database backed up successfully to the 'Backups' folder.";
+                ShowToast("Manual backup completed!");
+            }
+            catch (Exception ex)
+            {
+                BackupStatusMessage = $"Error: {ex.Message}";
+            }
         }
 
         private void PerformRestore()
         {
-            BackupStatusMessage = "Backup & Restore is now managed via MySQL directly.";
+            BackupStatusMessage = "To restore a backup, please close the application, navigate to the 'Backups' folder, and copy the desired backup over 'payroll.db'.";
+            ShowToast("Please check instructions on screen", "ℹ️");
         }
 
         // ═════════════════════════════════════════════════════════════

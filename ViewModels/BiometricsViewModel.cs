@@ -121,7 +121,14 @@ namespace PayrollSystem.ViewModels
             }
         }
 
-        private void ImportBiometrics()
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
+
+        private async void ImportBiometrics()
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
@@ -131,63 +138,79 @@ namespace PayrollSystem.ViewModels
 
             if (dialog.ShowDialog() == true)
             {
+                IsLoading = true;
+                StatusMessage = "Parsing biometrics data... Please wait.";
+                
                 try
                 {
-                    if (!DatabaseHelper.TestConnection())
+                    // Run the heavy import process on a background thread so the UI doesn't freeze
+                    await System.Threading.Tasks.Task.Run(() =>
                     {
-                        StatusMessage = "Database connection required to import.";
-                        return;
-                    }
+                        if (!DatabaseHelper.TestConnection())
+                        {
+                            App.Current.Dispatcher.Invoke(() => StatusMessage = "Database connection required to import.");
+                            return;
+                        }
 
-                    // 1. Compute file hash for duplicate detection
-                    string fileHash = ComputeFileHash(dialog.FileName);
+                        // 1. Compute file hash for duplicate detection
+                        string fileHash = ComputeFileHash(dialog.FileName);
 
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
+                        using var conn = DatabaseHelper.GetConnection();
+                        conn.Open();
 
-                    // 2. Check if already imported
-                    using var checkCmd = new SqliteCommand("SELECT COUNT(*) FROM biometrics_imports WHERE file_hash=@hash", conn);
-                    checkCmd.Parameters.AddWithValue("@hash", fileHash);
-                    if (Convert.ToInt32(checkCmd.ExecuteScalar()) > 0)
-                    {
-                        MessageBox.Show(
-                            $"This exact Excel file has already been imported!",
-                            "Duplicate Import Detected",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
-                        return;
-                    }
+                        // 2. Check if already imported
+                        using var checkCmd = new SqliteCommand("SELECT COUNT(*) FROM biometrics_imports WHERE file_hash=@hash", conn);
+                        checkCmd.Parameters.AddWithValue("@hash", fileHash);
+                        if (Convert.ToInt32(checkCmd.ExecuteScalar()) > 0)
+                        {
+                            App.Current.Dispatcher.Invoke(() => 
+                            {
+                                MessageBox.Show(
+                                    $"This exact Excel file has already been imported!",
+                                    "Duplicate Import Detected",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
+                            });
+                            return;
+                        }
 
-                    // 3. Parse the file
-                    StatusMessage = "Parsing biometrics data...";
-                    var result = Utilities.BiometricsParser.ParseExcelFile(dialog.FileName);
+                        // 3. Parse the file
+                        var result = Utilities.BiometricsParser.ParseExcelFile(dialog.FileName);
 
-                    if (result.Records.Count == 0)
-                    {
-                        StatusMessage = "⚠️ No valid attendance records found in the file.";
-                        return;
-                    }
+                        if (result.Records.Count == 0)
+                        {
+                            App.Current.Dispatcher.Invoke(() => StatusMessage = "⚠️ No valid attendance records found in the file.");
+                            return;
+                        }
 
-                    // 4. Save the import record to MySQL
-                    using var insCmd = new SqliteCommand(@"
-                        INSERT INTO biometrics_imports (file_name, file_path, file_hash, employee_count, period_start, period_end, imported_at)
-                        VALUES (@fname, @fpath, @fhash, @ecount, @pstart, @pend, @iat)", conn);
-                    insCmd.Parameters.AddWithValue("@fname", Path.GetFileName(dialog.FileName));
-                    insCmd.Parameters.AddWithValue("@fpath", dialog.FileName);
-                    insCmd.Parameters.AddWithValue("@fhash", fileHash);
-                    insCmd.Parameters.AddWithValue("@ecount", result.Records.Count);
-                    insCmd.Parameters.AddWithValue("@pstart", result.StartDate);
-                    insCmd.Parameters.AddWithValue("@pend", result.EndDate);
-                    insCmd.Parameters.AddWithValue("@iat", DateTime.Now);
-                    insCmd.ExecuteNonQuery();
+                        // 4. Save the import record to SQLite
+                        using var insCmd = new SqliteCommand(@"
+                            INSERT INTO biometrics_imports (file_name, file_path, file_hash, employee_count, period_start, period_end, imported_at)
+                            VALUES (@fname, @fpath, @fhash, @ecount, @pstart, @pend, @iat)", conn);
+                        insCmd.Parameters.AddWithValue("@fname", Path.GetFileName(dialog.FileName));
+                        insCmd.Parameters.AddWithValue("@fpath", dialog.FileName);
+                        insCmd.Parameters.AddWithValue("@fhash", fileHash);
+                        insCmd.Parameters.AddWithValue("@ecount", result.Records.Count);
+                        insCmd.Parameters.AddWithValue("@pstart", result.StartDate);
+                        insCmd.Parameters.AddWithValue("@pend", result.EndDate);
+                        insCmd.Parameters.AddWithValue("@iat", DateTime.Now);
+                        insCmd.ExecuteNonQuery();
 
-                    LoadData();
-
-                    StatusMessage = $"✓ Successfully imported \"{Path.GetFileName(dialog.FileName)}\" — {result.Records.Count} employees";
+                        App.Current.Dispatcher.Invoke(() => 
+                        {
+                            LoadData();
+                            StatusMessage = $"✓ Successfully imported \"{Path.GetFileName(dialog.FileName)}\" — {result.Records.Count} employees";
+                            ShowToast("Biometrics imported successfully!");
+                        });
+                    });
                 }
                 catch (Exception ex)
                 {
                     StatusMessage = "Error parsing file: " + ex.Message;
+                }
+                finally
+                {
+                    IsLoading = false;
                 }
             }
         }
