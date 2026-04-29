@@ -221,7 +221,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="DAILY RATE (₱)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding FormDailyRate}"/>
+                                <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding FormDailyRate}" TextChanged="NumberTextBox_TextChanged"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="DEPARTMENT" Style="{StaticResource FieldLabel}"/>

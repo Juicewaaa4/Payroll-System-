@@ -124,6 +124,22 @@ namespace PayrollSystem.ViewModels
 
         private void NavigateTo(string page)
         {
+            if (CurrentView != null && CurrentView.HasUnsavedChanges)
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "You have unsaved changes. Are you sure you want to leave?",
+                    "Unsaved Changes",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Warning);
+                if (result == System.Windows.MessageBoxResult.No)
+                {
+                    return; // Cancel navigation
+                }
+                
+                // If they proceed, forcefully close the form in the employee view
+                if (CurrentView is EmployeeViewModel evm) evm.IsFormVisible = false;
+            }
+
             ActiveNav = page;
 
             // Switch view immediately for instant feel

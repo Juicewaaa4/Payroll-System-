@@ -32,8 +32,10 @@ namespace PayrollSystem.ViewModels
 
         public string SearchText { get => _searchText; set { SetProperty(ref _searchText, value); FilterEmployees(); } }
         public EmployeeItem? SelectedEmployee { get => _selectedEmployee; set => SetProperty(ref _selectedEmployee, value); }
-        public bool IsFormVisible { get => _isFormVisible; set => SetProperty(ref _isFormVisible, value); }
+        public bool IsFormVisible { get => _isFormVisible; set { SetProperty(ref _isFormVisible, value); OnPropertyChanged(nameof(HasUnsavedChanges)); } }
         public bool IsEditing { get => _isEditing; set => SetProperty(ref _isEditing, value); }
+
+        public override bool HasUnsavedChanges => IsFormVisible;
 
         public string FormFirstName { get => _formFirstName; set => SetProperty(ref _formFirstName, value); }
         public string FormLastName { get => _formLastName; set => SetProperty(ref _formLastName, value); }

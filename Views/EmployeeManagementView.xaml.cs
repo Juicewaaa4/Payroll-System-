@@ -33,5 +33,35 @@ namespace PayrollSystem.Views
                 }
             }
         }
+
+        private void NumberTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                // Temporarily detach to prevent infinite loop
+                textBox.TextChanged -= NumberTextBox_TextChanged;
+
+                string raw = textBox.Text.Replace(",", "");
+                if (decimal.TryParse(raw, out decimal result))
+                {
+                    int caretIndex = textBox.CaretIndex;
+                    int lengthBefore = textBox.Text.Length;
+
+                    // Format with commas, keep decimals if the user is typing them
+                    if (raw.Contains("."))
+                    {
+                        // Don't format while they are typing the decimal part to avoid disrupting input
+                    }
+                    else
+                    {
+                        textBox.Text = string.Format("{0:N0}", result);
+                        int diff = textBox.Text.Length - lengthBefore;
+                        textBox.CaretIndex = System.Math.Max(0, caretIndex + diff);
+                    }
+                }
+
+                textBox.TextChanged += NumberTextBox_TextChanged;
+            }
+        }
     }
 }

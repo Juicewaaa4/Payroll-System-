@@ -257,42 +257,42 @@
 
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="SSS Contribution"/>
-                                            <TextBox Grid.Column="1" Text="{Binding SssDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Grid.Column="1" Text="{Binding SssDeduction, UpdateSourceTrigger=PropertyChanged}" TextChanged="NumberTextBox_TextChanged"/>
                                         </Grid>
                                         
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="PhilHealth"/>
-                                            <TextBox Grid.Column="1" Text="{Binding PhilhealthDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Grid.Column="1" Text="{Binding PhilhealthDeduction, UpdateSourceTrigger=PropertyChanged}" TextChanged="NumberTextBox_TextChanged"/>
                                         </Grid>
 
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Pag-IBIG"/>
-                                            <TextBox Grid.Column="1" Text="{Binding PagibigDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Grid.Column="1" Text="{Binding PagibigDeduction, UpdateSourceTrigger=PropertyChanged}" TextChanged="NumberTextBox_TextChanged"/>
                                         </Grid>
 
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Loan"/>
-                                            <TextBox Grid.Column="1" Text="{Binding LoanDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Grid.Column="1" Text="{Binding LoanDeduction, UpdateSourceTrigger=PropertyChanged}" TextChanged="NumberTextBox_TextChanged"/>
                                         </Grid>
 
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Late"/>
-                                            <TextBox Grid.Column="1" Text="{Binding LateDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Grid.Column="1" Text="{Binding LateDeduction, UpdateSourceTrigger=PropertyChanged}" TextChanged="NumberTextBox_TextChanged"/>
                                         </Grid>
 
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Undertime"/>
-                                            <TextBox Grid.Column="1" Text="{Binding UndertimeDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Grid.Column="1" Text="{Binding UndertimeDeduction, UpdateSourceTrigger=PropertyChanged}" TextChanged="NumberTextBox_TextChanged"/>
                                         </Grid>
 
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Cash Advance"/>
-                                            <TextBox Grid.Column="1" Text="{Binding CashAdvance, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Grid.Column="1" Text="{Binding CashAdvance, UpdateSourceTrigger=PropertyChanged}" TextChanged="NumberTextBox_TextChanged"/>
                                         </Grid>
 
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
                                             <TextBox Grid.Column="0" Text="{Binding OthersDeductionName, UpdateSourceTrigger=PropertyChanged}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"/>
-                                            <TextBox Grid.Column="1" Text="{Binding OthersDeduction, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Grid.Column="1" Text="{Binding OthersDeduction, UpdateSourceTrigger=PropertyChanged}" TextChanged="NumberTextBox_TextChanged"/>
                                         </Grid>
                                     </StackPanel>
                                     
