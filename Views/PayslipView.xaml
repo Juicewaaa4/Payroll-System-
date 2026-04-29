@@ -225,7 +225,12 @@
                                     </Grid>
 
                                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding OthersName, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Grid.Column="0" Text="Cash Advance"/>
+                                        <TextBox Grid.Column="1" Text="{Binding CashAdvance, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" Text="{Binding OthersName, UpdateSourceTrigger=PropertyChanged}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"/>
                                         <TextBox Grid.Column="1" Text="{Binding Others, UpdateSourceTrigger=PropertyChanged}"/>
                                     </Grid>
                                 </StackPanel>

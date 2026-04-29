@@ -286,7 +286,12 @@
                                         </Grid>
 
                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
-                                            <ComboBox Grid.Column="0" IsEditable="True" ItemsSource="{Binding OtherDeductionTypes}" Text="{Binding OthersDeductionName, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Margin="0" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" TextSearch.TextPath="" Style="{DynamicResource ModernComboBox}"/>
+                                            <TextBlock Grid.Column="0" Text="Cash Advance"/>
+                                            <TextBox Grid.Column="1" Text="{Binding CashAdvance, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </Grid>
+
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                                            <TextBox Grid.Column="0" Text="{Binding OthersDeductionName, UpdateSourceTrigger=PropertyChanged}" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"/>
                                             <TextBox Grid.Column="1" Text="{Binding OthersDeduction, UpdateSourceTrigger=PropertyChanged}"/>
                                         </Grid>
                                     </StackPanel>

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
 
 namespace PayrollSystem.ViewModels
 {
@@ -87,22 +87,7 @@ namespace PayrollSystem.ViewModels
         {
             try
             {
-                if (!DatabaseHelper.TestConnection())
-                {
-                    DemoDatabase.Initialize();
-                    
-                    Employees.Clear();
-                    foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
-                    
-                    Departments.Clear();
-                    foreach (var dept in DemoDatabase.Departments)
-                    {
-                        Departments.Add(dept.Name);
-                    }
-                    
-                    FilterEmployees();
-                    return;
-                }
+                if (!DatabaseHelper.TestConnection()) return;
 
                 Employees.Clear();
                 Departments.Clear();
@@ -111,14 +96,14 @@ namespace PayrollSystem.ViewModels
                 conn.Open();
 
                 // Load departments
-                using (var cmd = new MySqlCommand("SELECT name FROM departments WHERE is_active = 1 ORDER BY name", conn))
+                using (var cmd = new SqliteCommand("SELECT name FROM departments WHERE is_active = 1 ORDER BY name", conn))
                 using (var reader = cmd.ExecuteReader())
                 {
-                    while (reader.Read()) Departments.Add(reader.GetString("name"));
+                    while (reader.Read()) Departments.Add(reader.GetString(0));
                 }
 
                 // Load employees
-                using (var cmd = new MySqlCommand(
+                using (var cmd = new SqliteCommand(
                     @"SELECT e.*, d.name as dept_name FROM employees e
                       LEFT JOIN departments d ON e.department_id = d.id
                       ORDER BY e.last_name, e.first_name", conn))
@@ -126,54 +111,31 @@ namespace PayrollSystem.ViewModels
                 {
                     while (reader.Read())
                     {
+                        var isActive = reader.GetInt32(reader.GetOrdinal("is_active")) == 1;
                         Employees.Add(new EmployeeItem
                         {
-                            Id = reader.GetInt32("id"),
-                            EmpNumber = reader.GetString("emp_number"),
-                            FirstName = reader.GetString("first_name"),
-                            LastName = reader.GetString("last_name"),
-                            FullName = $"{reader.GetString("first_name")} {reader.GetString("last_name")}",
-                            Position = reader.GetString("position"),
-                            Department = reader.IsDBNull(reader.GetOrdinal("dept_name")) ? "" : reader.GetString("dept_name"),
-                            DailyRate = reader.GetDecimal("daily_rate"),
-                            DailyRateFormatted = $"₱{reader.GetDecimal("daily_rate"):N2}",
-                            HireDate = reader.GetDateTime("hire_date"),
-                            IsActive = reader.GetBoolean("is_active"),
-                            Status = reader.GetBoolean("is_active") ? "Active" : "Inactive"
+                            Id = reader.GetInt32(reader.GetOrdinal("id")),
+                            EmpNumber = reader.GetString(reader.GetOrdinal("emp_number")),
+                            FirstName = reader.GetString(reader.GetOrdinal("first_name")),
+                            LastName = reader.GetString(reader.GetOrdinal("last_name")),
+                            FullName = $"{reader.GetString(reader.GetOrdinal("first_name"))} {reader.GetString(reader.GetOrdinal("last_name"))}",
+                            Position = reader.GetString(reader.GetOrdinal("position")),
+                            Department = reader.IsDBNull(reader.GetOrdinal("dept_name")) ? "" : reader.GetString(reader.GetOrdinal("dept_name")),
+                            DailyRate = reader.GetDecimal(reader.GetOrdinal("daily_rate")),
+                            DailyRateFormatted = $"₱{reader.GetDecimal(reader.GetOrdinal("daily_rate")):N2}",
+                            HireDate = DateTime.Parse(reader.GetString(reader.GetOrdinal("hire_date"))),
+                            IsActive = isActive,
+                            Status = isActive ? "Active" : "Inactive"
                         });
                     }
                 }
-
-                // --- MAGIC SYNC ---
-                // Always sync the MySQL data into the local JSON files so the flash drive is perfectly updated!
-                DemoDatabase.Initialize();
-                DemoDatabase.Employees.Clear();
-                foreach(var emp in Employees) { DemoDatabase.Employees.Add(emp); }
-                DemoDatabase.SaveChanges();
             }
-            catch
+            catch (Exception ex)
             {
-                LoadDemoData();
+                FormError = $"Failed to load employees: {ex.Message}";
             }
 
             FilterEmployees();
-        }
-
-        private void LoadDemoData()
-        {
-            DemoDatabase.Initialize();
-
-            Departments.Clear();
-            foreach (var dept in DemoDatabase.Departments)
-            {
-                Departments.Add(dept.Name);
-            }
-
-            Employees.Clear();
-            foreach (var emp in DemoDatabase.Employees)
-            {
-                Employees.Add(emp);
-            }
         }
 
         private void FilterEmployees()
@@ -257,115 +219,51 @@ namespace PayrollSystem.ViewModels
 
             try
             {
-                if (DatabaseHelper.TestConnection())
+                if (!DatabaseHelper.TestConnection())
                 {
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
+                    FormError = "Database connection error.";
+                    return;
+                }
 
-                    if (IsEditing && SelectedEmployee != null)
-                    {
-                        using var cmd = new MySqlCommand(
-                            @"UPDATE employees SET first_name=@fn, last_name=@ln, position=@pos, daily_rate=@rate,
-                              department_id=(SELECT id FROM departments WHERE name=@dept LIMIT 1)
-                              WHERE id=@id", conn);
-                        cmd.Parameters.AddWithValue("@fn", FormFirstName);
-                        cmd.Parameters.AddWithValue("@ln", FormLastName);
-                        cmd.Parameters.AddWithValue("@pos", FormPosition);
-                        cmd.Parameters.AddWithValue("@rate", rate);
-                        cmd.Parameters.AddWithValue("@dept", FormDepartment);
-                        cmd.Parameters.AddWithValue("@id", SelectedEmployee.Id);
-                        cmd.ExecuteNonQuery();
-                    }
-                    else
-                    {
-                        using var countCmd = new MySqlCommand("SELECT COUNT(*) FROM employees", conn);
-                        var count = Convert.ToInt32(countCmd.ExecuteScalar()) + 1;
-                        var empNum = $"EMP-{count:D4}";
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
 
-                        using var cmd = new MySqlCommand(
-                            @"INSERT INTO employees (emp_number, first_name, last_name, position, daily_rate, department_id, hire_date)
-                              VALUES (@num, @fn, @ln, @pos, @rate, (SELECT id FROM departments WHERE name=@dept LIMIT 1), @hd)", conn);
-                        cmd.Parameters.AddWithValue("@num", empNum);
-                        cmd.Parameters.AddWithValue("@fn", FormFirstName);
-                        cmd.Parameters.AddWithValue("@ln", FormLastName);
-                        cmd.Parameters.AddWithValue("@pos", FormPosition);
-                        cmd.Parameters.AddWithValue("@rate", rate);
-                        cmd.Parameters.AddWithValue("@dept", FormDepartment);
-                        cmd.Parameters.AddWithValue("@hd", DateTime.Parse(FormHireDate));
-                        cmd.ExecuteNonQuery();
-                    }
-
-                    IsFormVisible = false;
-                    FormError = "";
-                    DemoDatabase.LogAction(IsEditing ? "Employee Edited" : "Employee Added",
-                        $"{FormFirstName} {FormLastName} — {FormPosition}, ₱{rate:N2}/day ({FormDepartment})");
-                    LoadEmployees();
+                if (IsEditing && SelectedEmployee != null)
+                {
+                    using var cmd = new SqliteCommand(
+                        @"UPDATE employees SET first_name=@fn, last_name=@ln, position=@pos, daily_rate=@rate,
+                          department_id=(SELECT id FROM departments WHERE name=@dept LIMIT 1)
+                          WHERE id=@id", conn);
+                    cmd.Parameters.AddWithValue("@fn", FormFirstName);
+                    cmd.Parameters.AddWithValue("@ln", FormLastName);
+                    cmd.Parameters.AddWithValue("@pos", FormPosition);
+                    cmd.Parameters.AddWithValue("@rate", rate);
+                    cmd.Parameters.AddWithValue("@dept", FormDepartment);
+                    cmd.Parameters.AddWithValue("@id", SelectedEmployee.Id);
+                    cmd.ExecuteNonQuery();
                 }
                 else
                 {
-                    // Demo mode: update in-memory
-                    if (IsEditing && SelectedEmployee != null)
-                    {
-                        // Update directly in the local Employees collection
-                        var emp = Employees.FirstOrDefault(e => e.Id == SelectedEmployee.Id);
-                        if (emp != null)
-                        {
-                            emp.FirstName = FormFirstName;
-                            emp.LastName = FormLastName;
-                            emp.FullName = $"{FormFirstName} {FormLastName}";
-                            emp.Position = FormPosition;
-                            emp.DailyRate = rate;
-                            emp.DailyRateFormatted = $"₱{rate:N2}";
-                            emp.Department = FormDepartment;
-                        }
+                    using var countCmd = new SqliteCommand("SELECT COUNT(*) FROM employees", conn);
+                    var count = Convert.ToInt32(countCmd.ExecuteScalar()) + 1;
+                    var empNum = $"EMP-{count:D4}";
 
-                        // Also update in DemoDatabase for cross-section persistence
-                        var demoEmp = DemoDatabase.Employees.FirstOrDefault(e => e.Id == SelectedEmployee.Id);
-                        if (demoEmp != null && demoEmp != emp)
-                        {
-                            demoEmp.FirstName = FormFirstName;
-                            demoEmp.LastName = FormLastName;
-                            demoEmp.FullName = $"{FormFirstName} {FormLastName}";
-                            demoEmp.Position = FormPosition;
-                            demoEmp.DailyRate = rate;
-                            demoEmp.DailyRateFormatted = $"₱{rate:N2}";
-                            demoEmp.Department = FormDepartment;
-                        }
-                    }
-                    else
-                    {
-                        var newId = Employees.Count > 0 ? Employees.Max(e => e.Id) + 1 : 1;
-                        var newEmp = new EmployeeItem
-                        {
-                            Id = newId,
-                            EmpNumber = $"EMP-{newId:D4}",
-                            FirstName = FormFirstName,
-                            LastName = FormLastName,
-                            FullName = $"{FormFirstName} {FormLastName}",
-                            Position = FormPosition,
-                            DailyRate = rate,
-                            DailyRateFormatted = $"₱{rate:N2}",
-                            Department = FormDepartment,
-                            HireDate = DateTime.TryParse(FormHireDate, out var hd) ? hd : DateTime.Now,
-                            IsActive = true,
-                            Status = "Active"
-                        };
-                        Employees.Add(newEmp);
-                        if (DemoDatabase.Employees != null) DemoDatabase.Employees.Add(newEmp);
-                    }
-
-                    IsFormVisible = false;
-                    FormError = "";
-                    
-                    // Auto-add new department to the list if it doesn't exist
-                    if (!string.IsNullOrWhiteSpace(FormDepartment) && !Departments.Contains(FormDepartment))
-                        Departments.Add(FormDepartment);
-                    
-                    DemoDatabase.SaveChanges(); // Persist offline data permanently!
-                    DemoDatabase.LogAction(IsEditing ? "Employee Edited" : "Employee Added",
-                        $"{FormFirstName} {FormLastName} — {FormPosition}, ₱{rate:N2}/day ({FormDepartment})");
-                    FilterEmployees();
+                    using var cmd = new SqliteCommand(
+                        @"INSERT INTO employees (emp_number, first_name, last_name, position, daily_rate, department_id, hire_date)
+                          VALUES (@num, @fn, @ln, @pos, @rate, (SELECT id FROM departments WHERE name=@dept LIMIT 1), @hd)", conn);
+                    cmd.Parameters.AddWithValue("@num", empNum);
+                    cmd.Parameters.AddWithValue("@fn", FormFirstName);
+                    cmd.Parameters.AddWithValue("@ln", FormLastName);
+                    cmd.Parameters.AddWithValue("@pos", FormPosition);
+                    cmd.Parameters.AddWithValue("@rate", rate);
+                    cmd.Parameters.AddWithValue("@dept", FormDepartment);
+                    cmd.Parameters.AddWithValue("@hd", DateTime.Parse(FormHireDate));
+                    cmd.ExecuteNonQuery();
                 }
+
+                IsFormVisible = false;
+                FormError = "";
+                LoadEmployees();
             }
             catch (Exception ex)
             {
@@ -389,21 +287,10 @@ namespace PayrollSystem.ViewModels
                 {
                     using var conn = DatabaseHelper.GetConnection();
                     conn.Open();
-                    using var cmd = new MySqlCommand("UPDATE employees SET is_active=0 WHERE id=@id", conn);
+                    using var cmd = new SqliteCommand("UPDATE employees SET is_active=0 WHERE id=@id", conn);
                     cmd.Parameters.AddWithValue("@id", emp.Id);
                     cmd.ExecuteNonQuery();
                     LoadEmployees();
-                }
-                else
-                {
-                    // Demo mode: update in-memory and save offline
-                    Employees.Remove(emp);
-                    var demoEmp = DemoDatabase.Employees.FirstOrDefault(e => e.Id == emp.Id);
-                    if (demoEmp != null) DemoDatabase.Employees.Remove(demoEmp);
-                    
-                    DemoDatabase.SaveChanges(); // Persist offline delete
-                    DemoDatabase.LogAction("Employee Deleted", $"{emp.FullName} ({emp.EmpNumber}) removed from system.");
-                    FilterEmployees();
                 }
             }
         }

@@ -7,33 +7,10 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="32,28,32,32">
                 <!-- Header -->
-                <DockPanel Margin="0,0,0,24">
-                    <!-- Appearance Toggle (Right) -->
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="🌙 Dark Mode" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold"/>
-                        <ToggleButton IsChecked="{Binding IsDarkMode, Mode=TwoWay}" Cursor="Hand">
-                            <ToggleButton.Template>
-                                <ControlTemplate TargetType="ToggleButton">
-                                    <Border x:Name="bg" Width="40" Height="20" CornerRadius="10" Background="{DynamicResource BorderBrush}">
-                                        <Ellipse x:Name="knob" Width="16" Height="16" Fill="White" HorizontalAlignment="Left" Margin="2,0"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="bg" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-                                            <Setter TargetName="knob" Property="HorizontalAlignment" Value="Right"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </ToggleButton.Template>
-                        </ToggleButton>
-                    </StackPanel>
-
-                    <!-- Title (Left) -->
-                    <StackPanel>
-                        <TextBlock Text="Settings &amp; Tools" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Manage users, departments, backups, and generate annual reports" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
-                    </StackPanel>
-                </DockPanel>
+                <StackPanel Margin="0,0,0,24">
+                    <TextBlock Text="Settings &amp; Tools" Style="{StaticResource PageTitle}" Margin="0,0,0,4"/>
+                    <TextBlock Text="Manage users, departments, backups, and generate annual reports" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
+                </StackPanel>
 
                 <!-- Status Message -->
                 <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource PrimaryBrush}"

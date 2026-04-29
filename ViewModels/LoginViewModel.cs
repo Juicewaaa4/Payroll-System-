@@ -2,6 +2,7 @@ using System;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
+using PayrollSystem.Utilities;
 
 namespace PayrollSystem.ViewModels
 {
@@ -116,53 +117,37 @@ namespace PayrollSystem.ViewModels
 
             try
             {
-                // Try database authentication
-                if (DatabaseHelper.TestConnection())
+                if (!DatabaseHelper.TestConnection())
                 {
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
-                    using var cmd = new MySql.Data.MySqlClient.MySqlCommand(
-                        "SELECT full_name, role FROM users WHERE username = @user AND password_hash = @pass AND is_active = 1",
-                        conn);
-                    cmd.Parameters.AddWithValue("@user", Username);
-                    cmd.Parameters.AddWithValue("@pass", password);
-
-                    using var reader = cmd.ExecuteReader();
-                    if (reader.Read())
-                    {
-                        var fullName = reader.GetString("full_name");
-                        var role = reader.GetString("role");
-                        SaveRememberedUser();
-                        LoginSuccessful?.Invoke(fullName, role);
-                        return;
-                    }
+                    ErrorMessage = "Cannot connect to the database.";
+                    return;
                 }
 
-                // Fallback when database is not available
-                DemoDatabase.Initialize();
-                var dbUser = DemoDatabase.Users.FirstOrDefault(u => u.Username == Username && u.PasswordHash == password && u.IsActive);
-                if (dbUser != null)
+                var hashedPassword = PasswordHelper.HashPassword(password);
+
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+                using var cmd = new Microsoft.Data.Sqlite.SqliteCommand(
+                    "SELECT full_name, role FROM users WHERE username = @user AND password_hash = @pass AND is_active = 1",
+                    conn);
+                cmd.Parameters.AddWithValue("@user", Username);
+                cmd.Parameters.AddWithValue("@pass", hashedPassword);
+
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
                 {
+                    var fullName = reader.GetString(reader.GetOrdinal("full_name"));
+                    var role = reader.GetString(reader.GetOrdinal("role"));
                     SaveRememberedUser();
-                    LoginSuccessful?.Invoke(dbUser.FullName, dbUser.Role);
+                    LoginSuccessful?.Invoke(fullName, role);
                     return;
                 }
 
                 ErrorMessage = "Invalid username or password.";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Fallback when database is not available
-                DemoDatabase.Initialize();
-                var demoUser = DemoDatabase.Users.FirstOrDefault(u => u.Username == Username && u.PasswordHash == password && u.IsActive);
-                if (demoUser != null)
-                {
-                    SaveRememberedUser();
-                    LoginSuccessful?.Invoke(demoUser.FullName, demoUser.Role);
-                    return;
-                }
-
-                ErrorMessage = "Invalid username or password.";
+                ErrorMessage = $"Database error: {ex.Message}";
             }
             finally
             {

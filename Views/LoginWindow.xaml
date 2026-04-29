@@ -84,7 +84,7 @@
                                      FontFamily="{StaticResource PrimaryFont}"
                                      Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
                                      GotFocus="UsernameBox_GotFocus" LostFocus="UsernameBox_LostFocus"
-                                     TextChanged="UsernameBox_TextChanged"/>
+                                     TextChanged="UsernameBox_TextChanged" KeyDown="UsernameBox_KeyDown"/>
                             <TextBlock x:Name="UsernamePlaceholder" Text="Enter your username"
                                        FontSize="13" Foreground="#BDBDBD" Padding="42,11,14,11"
                                        IsHitTestVisible="False" VerticalAlignment="Center"/>

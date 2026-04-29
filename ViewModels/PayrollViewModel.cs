@@ -4,7 +4,8 @@ using System.Linq;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
+using PayrollSystem.Models;
 
 namespace PayrollSystem.ViewModels
 {
@@ -27,6 +28,7 @@ namespace PayrollSystem.ViewModels
         private string _loanDeduction = "0";
         private string _lateDeduction = "0";
         private string _undertimeDeduction = "0";
+        private string _cashAdvance = "0";
         private string _othersDeduction = "0";
         private string _totalDeductions = "₱0.00";
         private string _netPay = "₱0.00";
@@ -53,9 +55,9 @@ namespace PayrollSystem.ViewModels
         public string LoanDeduction { get => _loanDeduction; set { SetProperty(ref _loanDeduction, value); ComputeDeductions(); } }
         public string LateDeduction { get => _lateDeduction; set { SetProperty(ref _lateDeduction, value); ComputeDeductions(); } }
         public string UndertimeDeduction { get => _undertimeDeduction; set { SetProperty(ref _undertimeDeduction, value); ComputeDeductions(); } }
+        public string CashAdvance { get => _cashAdvance; set { SetProperty(ref _cashAdvance, value); ComputeDeductions(); } }
         public string OthersDeduction { get => _othersDeduction; set { SetProperty(ref _othersDeduction, value); ComputeDeductions(); } }
         public string OthersDeductionName { get => _othersDeductionName; set => SetProperty(ref _othersDeductionName, value); }
-        public ObservableCollection<string> OtherDeductionTypes { get; } = new() { "Advance Cash", "Damages", "Loss", "Others" };
         public string TotalDeductions { get => _totalDeductions; set => SetProperty(ref _totalDeductions, value); }
         public string NetPay { get => _netPay; set => SetProperty(ref _netPay, value); }
         public DateTime PeriodStart { get => _periodStart; set { if(SetProperty(ref _periodStart, value)) { UpdateDaysFromPeriod(); PopulateFromBiometrics(); } } }
@@ -109,42 +111,30 @@ namespace PayrollSystem.ViewModels
         {
             try
             {
-                if (!DatabaseHelper.TestConnection())
-                {
-                    DemoDatabase.Initialize();
-                    
-                    Employees.Clear();
-                    foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
-                    
-                    FilterEmployees();
-                    return;
-                }
+                if (!DatabaseHelper.TestConnection()) return;
 
                 Employees.Clear();
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
-                using var cmd = new MySqlCommand("SELECT id, emp_number, first_name, last_name, position, daily_rate FROM employees WHERE is_active = 1 ORDER BY last_name", conn);
+                using var cmd = new SqliteCommand("SELECT id, emp_number, first_name, last_name, position, daily_rate FROM employees WHERE is_active = 1 ORDER BY last_name", conn);
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
                     Employees.Add(new EmployeeItem
                     {
-                        Id = reader.GetInt32("id"),
-                        EmpNumber = reader.GetString("emp_number"),
-                        FirstName = reader.GetString("first_name"),
-                        LastName = reader.GetString("last_name"),
-                        FullName = $"{reader.GetString("first_name")} {reader.GetString("last_name")}",
-                        Position = reader.GetString("position"),
-                        DailyRate = reader.GetDecimal("daily_rate"),
-                        DailyRateFormatted = $"₱{reader.GetDecimal("daily_rate"):N2}"
+                        Id = reader.GetInt32(reader.GetOrdinal("id")),
+                        EmpNumber = reader.GetString(reader.GetOrdinal("emp_number")),
+                        FirstName = reader.GetString(reader.GetOrdinal("first_name")),
+                        LastName = reader.GetString(reader.GetOrdinal("last_name")),
+                        FullName = $"{reader.GetString(reader.GetOrdinal("first_name"))} {reader.GetString(reader.GetOrdinal("last_name"))}",
+                        Position = reader.GetString(reader.GetOrdinal("position")),
+                        DailyRate = reader.GetDecimal(reader.GetOrdinal("daily_rate")),
+                        DailyRateFormatted = $"₱{reader.GetDecimal(reader.GetOrdinal("daily_rate")):N2}"
                     });
                 }
             }
             catch 
             { 
-                DemoDatabase.Initialize();
-                Employees.Clear();
-                foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
             }
 
             FilterEmployees();
@@ -155,30 +145,46 @@ namespace PayrollSystem.ViewModels
         {
             try
             {
-                // Grab the single most recent import
-                var latestImport = DemoDatabase.BiometricsImports.OrderByDescending(x => x.ImportedAt).FirstOrDefault();
-                if (latestImport != null && System.IO.File.Exists(latestImport.FilePath))
+                if (!DatabaseHelper.TestConnection()) return;
+
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+
+                using var cmd = new SqliteCommand("SELECT file_path, file_name FROM biometrics_imports ORDER BY imported_at DESC LIMIT 1", conn);
+                using var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
                 {
-                    StatusMessage = "Loading latest biometrics data...";
-                    var result = Utilities.BiometricsParser.ParseExcelFile(latestImport.FilePath);
+                    var filePath = reader.GetString(reader.GetOrdinal("file_path"));
+                    var fileName = reader.GetString(reader.GetOrdinal("file_name"));
 
-                    _importedAttendance.Clear();
-                    foreach (var summary in result.Records)
+                    if (System.IO.File.Exists(filePath))
                     {
-                        if (!string.IsNullOrEmpty(summary.EmpNumber))
-                            _importedAttendance[summary.EmpNumber] = summary;
-                    }
+                        StatusMessage = "Loading latest biometrics data...";
+                        var result = Utilities.BiometricsParser.ParseExcelFile(filePath);
 
-                    if (result.Records.Count > 0)
-                    {
-                        StatusMessage = $"✓ Auto-loaded {result.Records.Count} biometric records from {latestImport.FileName}.";
-                        if (result.StartDate.HasValue && result.EndDate.HasValue)
+                        _importedAttendance.Clear();
+                        foreach (var summary in result.Records)
                         {
-                            _isUpdatingDates = true; 
-                            PeriodStart = result.StartDate.Value;
-                            PeriodEnd = result.EndDate.Value;
-                            _isUpdatingDates = false;
+                            if (!string.IsNullOrEmpty(summary.EmpNumber))
+                                _importedAttendance[summary.EmpNumber] = summary;
                         }
+
+                        if (result.Records.Count > 0)
+                        {
+                            StatusMessage = $"✓ Auto-loaded {result.Records.Count} biometric records from {fileName}.";
+                            if (result.StartDate.HasValue && result.EndDate.HasValue)
+                            {
+                                _isUpdatingDates = true; 
+                                PeriodStart = result.StartDate.Value;
+                                PeriodEnd = result.EndDate.Value;
+                                _isUpdatingDates = false;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        StatusMessage = "No biometrics data loaded. Please import an Excel file via the Biometrics section.";
                     }
                 }
                 else
@@ -226,8 +232,7 @@ namespace PayrollSystem.ViewModels
 
                 if (summary.DailyRecords != null && summary.DailyRecords.Count > 0)
                 {
-                    // [NEW LOGIC] "Nag rereflect din sa period start and period end"
-                    // Snap the calendar to match the employee's actual attendance range!
+                    // Snap the calendar to match the employee's actual attendance range
                     int minDay = summary.DailyRecords.Min(r => r.DayNumber);
                     int maxDay = summary.DailyRecords.Max(r => r.DayNumber);
 
@@ -241,7 +246,7 @@ namespace PayrollSystem.ViewModels
                         PeriodEnd = newEnd; 
                         _isUpdatingDates = false;
                     } 
-                    catch { } // Suppress if month boundaries fail due to leap year edge cases
+                    catch { }
 
                     // Dynamically compute based on the SNAP dates
                     for (DateTime d = PeriodStart.Date; d <= PeriodEnd.Date; d = d.AddDays(1))
@@ -265,7 +270,6 @@ namespace PayrollSystem.ViewModels
                     totalOT = summary.OvertimeHours;
                 }
 
-                // If days resulted in 0 but they are processing a 6-day period, maybe leave the editable days alone
                 if (defaultDays > 0) 
                 {
                     _isUpdatingDates = true;
@@ -372,9 +376,10 @@ namespace PayrollSystem.ViewModels
             decimal.TryParse(LoanDeduction, out var loan);
             decimal.TryParse(LateDeduction, out var late);
             decimal.TryParse(UndertimeDeduction, out var under);
+            decimal.TryParse(CashAdvance, out var cashAdv);
             decimal.TryParse(OthersDeduction, out var others);
 
-            var totalDed = sss + pagibig + phil + loan + late + under + others;
+            var totalDed = sss + pagibig + phil + loan + late + under + cashAdv + others;
             var net = _cachedGross - totalDed;
 
             TotalDeductions = $"₱{totalDed:N2}";
@@ -398,6 +403,7 @@ namespace PayrollSystem.ViewModels
                 decimal.TryParse(LoanDeduction, out var loan);
                 decimal.TryParse(LateDeduction, out var late);
                 decimal.TryParse(UndertimeDeduction, out var under);
+                decimal.TryParse(CashAdvance, out var cashAdv);
                 decimal.TryParse(OthersDeduction, out var others);
 
                 var rate = SelectedEmployee.DailyRate;
@@ -405,7 +411,7 @@ namespace PayrollSystem.ViewModels
                 var otPay = ot * (rate / 8) * 1.25m;
                 var holPay = hol * (rate / 8) * 2m;
                 var gross = basic + otPay + holPay + allow + bon;
-                var totalDed = sss + pagibig + phil + loan + late + under + others;
+                var totalDed = sss + pagibig + phil + loan + late + under + cashAdv + others;
                 var net = gross - totalDed;
 
                 if (DatabaseHelper.TestConnection())
@@ -413,14 +419,14 @@ namespace PayrollSystem.ViewModels
                     using var conn = DatabaseHelper.GetConnection();
                     conn.Open();
 
-                    using var cmd = new MySqlCommand(@"INSERT INTO payroll
+                    using var cmd = new SqliteCommand(@"INSERT INTO payroll
                         (employee_id, payroll_date, period_start, period_end, work_days, overtime_hours, holiday_hours,
                          basic_salary, overtime_pay, holiday_pay, allowance, bonus, gross_salary, total_deductions, net_pay, status)
-                        VALUES (@eid, NOW(), @ps, @pe, @wd, @ot, @hol, @basic, @otpay, @holpay, @allow, @bon, @gross, @ded, @net, 'Pending')", conn);
+                        VALUES (@eid, datetime('now', 'localtime'), @ps, @pe, @wd, @ot, @hol, @basic, @otpay, @holpay, @allow, @bon, @gross, @ded, @net, 'Pending')", conn);
 
                     cmd.Parameters.AddWithValue("@eid", SelectedEmployee.Id);
-                    cmd.Parameters.AddWithValue("@ps", PeriodStart);
-                    cmd.Parameters.AddWithValue("@pe", PeriodEnd);
+                    cmd.Parameters.AddWithValue("@ps", PeriodStart.ToString("yyyy-MM-dd"));
+                    cmd.Parameters.AddWithValue("@pe", PeriodEnd.ToString("yyyy-MM-dd"));
                     cmd.Parameters.AddWithValue("@wd", days);
                     cmd.Parameters.AddWithValue("@ot", ot);
                     cmd.Parameters.AddWithValue("@hol", hol);
@@ -434,55 +440,23 @@ namespace PayrollSystem.ViewModels
                     cmd.Parameters.AddWithValue("@net", net);
                     cmd.ExecuteNonQuery();
 
-                    var payrollId = cmd.LastInsertedId;
+                    // SQLite uses last_insert_rowid() instead of MySQL's LastInsertedId
+                    using var idCmd = new SqliteCommand("SELECT last_insert_rowid()", conn);
+                    var payrollId = Convert.ToInt64(idCmd.ExecuteScalar());
                     SaveDeduction(conn, payrollId, "SSS", "SSS", sss);
                     SaveDeduction(conn, payrollId, "PAG-IBIG", "PAGIBIG", pagibig);
                     SaveDeduction(conn, payrollId, "PhilHealth", "PhilHealth", phil);
                     if(loan > 0) SaveDeduction(conn, payrollId, "Loan", "Loan", loan);
                     if(late > 0) SaveDeduction(conn, payrollId, "Late", "Other", late);
                     if(under > 0) SaveDeduction(conn, payrollId, "Undertime", "Other", under);
+                    if(cashAdv > 0) SaveDeduction(conn, payrollId, "Cash Advance", "Other", cashAdv);
                     if(others > 0) SaveDeduction(conn, payrollId, string.IsNullOrWhiteSpace(OthersDeductionName) ? "Others" : OthersDeductionName, "Other", others);
+                    
+                    StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2} (Pending Approval)";
+                    
+                    // Signal navigation to Payslip section
+                    PayrollProcessed?.Invoke(SelectedEmployee);
                 }
-
-                // Always save to demo history (for Reports section)
-                var now = DateTime.Now;
-                DemoDatabase.AddPayrollRecord(new PayrollHistoryRecord
-                {
-                    Id = DemoDatabase.PayrollHistory.Count + 1,
-                    EmployeeName = SelectedEmployee.FullName,
-                    EmpNumber = SelectedEmployee.EmpNumber,
-                    PayrollDate = now,
-                    PayrollDateFormatted = now.ToString("MMM dd, yyyy  h:mm tt"),
-                    WorkDays = days,
-                    PeriodStart = PeriodStart,
-                    PeriodEnd = PeriodEnd,
-                    OvertimeHours = ot,
-                    HolidayHours = hol,
-                    Allowance = allow,
-                    Bonus = bon,
-                    GrossRaw = gross,
-                    GrossSalary = $"₱{gross:N2}",
-                    DeductionsRaw = totalDed,
-                    Deductions = $"₱{totalDed:N2}",
-                    NetPayRaw = net,
-                    NetPay = $"₱{net:N2}",
-                    Status = "Pending",
-                    Sss = sss,
-                    Pagibig = pagibig,
-                    Philhealth = phil,
-                    Loan = loan,
-                    Late = late,
-                    Undertime = under,
-                    Others = others,
-                    OthersName = string.IsNullOrWhiteSpace(OthersDeductionName) ? "Others" : OthersDeductionName
-                });
-
-                StatusMessage = $"✓ Payroll processed for {SelectedEmployee.FullName} — Net Pay: ₱{net:N2} (Pending Approval)";
-                DemoDatabase.LogAction("Payroll Processed",
-                    $"{SelectedEmployee.FullName} ({SelectedEmployee.EmpNumber}) — Gross: ₱{gross:N2}, Deductions: ₱{totalDed:N2}, Net: ₱{net:N2}");
-                
-                // Signal navigation to Payslip section
-                PayrollProcessed?.Invoke(SelectedEmployee);
             }
             catch (Exception ex)
             {
@@ -490,9 +464,9 @@ namespace PayrollSystem.ViewModels
             }
         }
 
-        private void SaveDeduction(MySqlConnection conn, long payrollId, string name, string type, decimal amount)
+        private void SaveDeduction(SqliteConnection conn, long payrollId, string name, string type, decimal amount)
         {
-            using var cmd = new MySqlCommand("INSERT INTO deductions (payroll_id, name, type, amount) VALUES (@pid, @n, @t, @a)", conn);
+            using var cmd = new SqliteCommand("INSERT INTO deductions (payroll_id, name, type, amount) VALUES (@pid, @n, @t, @a)", conn);
             cmd.Parameters.AddWithValue("@pid", payrollId);
             cmd.Parameters.AddWithValue("@n", name);
             cmd.Parameters.AddWithValue("@t", type);

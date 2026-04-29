@@ -7,6 +7,8 @@ using System.Windows;
 using System.Windows.Input;
 using PayrollSystem.DataAccess;
 using PayrollSystem.Helpers;
+using Microsoft.Data.Sqlite;
+using PayrollSystem.Models;
 
 namespace PayrollSystem.ViewModels
 {
@@ -45,17 +47,63 @@ namespace PayrollSystem.ViewModels
             DeleteCommand = new RelayCommand(p => ShowDeleteModal(p as BiometricsImportRecord));
             ConfirmDeleteCommand = new RelayCommand(_ => ConfirmDelete());
             CancelDeleteCommand = new RelayCommand(_ => { IsDeleteModalVisible = false; _pendingDeleteRecord = null; });
+            EnsureTableExists();
+        }
+
+        private void EnsureTableExists()
+        {
+            try
+            {
+                if (!DatabaseHelper.TestConnection()) return;
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+                using var cmd = new SqliteCommand(@"
+                    CREATE TABLE IF NOT EXISTS biometrics_imports (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        file_name VARCHAR(255) NOT NULL,
+                        file_path VARCHAR(255) NOT NULL,
+                        file_hash VARCHAR(64) NOT NULL UNIQUE,
+                        employee_count INT NOT NULL,
+                        period_start DATE NOT NULL,
+                        period_end DATE NOT NULL,
+                        imported_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    );", conn);
+                cmd.ExecuteNonQuery();
+            }
+            catch { }
         }
 
         public void LoadData()
         {
-            DemoDatabase.Initialize();
-
             AllRecords.Clear();
-            foreach (var record in DemoDatabase.BiometricsImports.OrderByDescending(r => r.ImportedAt))
+            try
             {
-                AllRecords.Add(record);
+                if (!DatabaseHelper.TestConnection()) return;
+
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+                using var cmd = new SqliteCommand("SELECT * FROM biometrics_imports ORDER BY imported_at DESC", conn);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    AllRecords.Add(new BiometricsImportRecord
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("id")),
+                        FileName = reader.GetString(reader.GetOrdinal("file_name")),
+                        FilePath = reader.GetString(reader.GetOrdinal("file_path")),
+                        FileHash = reader.GetString(reader.GetOrdinal("file_hash")),
+                        EmployeeCount = reader.GetInt32(reader.GetOrdinal("employee_count")),
+                        PeriodStart = DateTime.Parse(reader.GetString(reader.GetOrdinal("period_start"))),
+                        PeriodEnd = DateTime.Parse(reader.GetString(reader.GetOrdinal("period_end"))),
+                        ImportedAt = DateTime.Parse(reader.GetString(reader.GetOrdinal("imported_at")))
+                    });
+                }
             }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error loading data: {ex.Message}";
+            }
+
             FilterRecords();
         }
 
@@ -85,19 +133,25 @@ namespace PayrollSystem.ViewModels
             {
                 try
                 {
+                    if (!DatabaseHelper.TestConnection())
+                    {
+                        StatusMessage = "Database connection required to import.";
+                        return;
+                    }
+
                     // 1. Compute file hash for duplicate detection
                     string fileHash = ComputeFileHash(dialog.FileName);
 
+                    using var conn = DatabaseHelper.GetConnection();
+                    conn.Open();
+
                     // 2. Check if already imported
-                    var existingImport = DemoDatabase.BiometricsImports.FirstOrDefault(r => r.FileHash == fileHash);
-                    if (existingImport != null)
+                    using var checkCmd = new SqliteCommand("SELECT COUNT(*) FROM biometrics_imports WHERE file_hash=@hash", conn);
+                    checkCmd.Parameters.AddWithValue("@hash", fileHash);
+                    if (Convert.ToInt32(checkCmd.ExecuteScalar()) > 0)
                     {
                         MessageBox.Show(
-                            $"This exact Excel file has already been imported!\n\n" +
-                            $"File: {existingImport.FileName}\n" +
-                            $"Period: {existingImport.PeriodRange}\n" +
-                            $"Imported On: {existingImport.ImportedAtFormatted}\n\n" +
-                            $"If you need to re-import, please delete the existing record first.",
+                            $"This exact Excel file has already been imported!",
                             "Duplicate Import Detected",
                             MessageBoxButton.OK,
                             MessageBoxImage.Warning);
@@ -114,31 +168,22 @@ namespace PayrollSystem.ViewModels
                         return;
                     }
 
-                    // 4. Save the import record
-                    int newId = DemoDatabase.BiometricsImports.Count > 0
-                        ? DemoDatabase.BiometricsImports.Max(r => r.Id) + 1
-                        : 1;
+                    // 4. Save the import record to MySQL
+                    using var insCmd = new SqliteCommand(@"
+                        INSERT INTO biometrics_imports (file_name, file_path, file_hash, employee_count, period_start, period_end, imported_at)
+                        VALUES (@fname, @fpath, @fhash, @ecount, @pstart, @pend, @iat)", conn);
+                    insCmd.Parameters.AddWithValue("@fname", Path.GetFileName(dialog.FileName));
+                    insCmd.Parameters.AddWithValue("@fpath", dialog.FileName);
+                    insCmd.Parameters.AddWithValue("@fhash", fileHash);
+                    insCmd.Parameters.AddWithValue("@ecount", result.Records.Count);
+                    insCmd.Parameters.AddWithValue("@pstart", result.StartDate);
+                    insCmd.Parameters.AddWithValue("@pend", result.EndDate);
+                    insCmd.Parameters.AddWithValue("@iat", DateTime.Now);
+                    insCmd.ExecuteNonQuery();
 
-                    var importRecord = new BiometricsImportRecord
-                    {
-                        Id = newId,
-                        FileName = Path.GetFileName(dialog.FileName),
-                        FilePath = dialog.FileName,
-                        ImportedAt = DateTime.Now,
-                        PeriodStart = result.StartDate,
-                        PeriodEnd = result.EndDate,
-                        EmployeeCount = result.Records.Count,
-                        FileHash = fileHash
-                    };
+                    LoadData();
 
-                    DemoDatabase.BiometricsImports.Insert(0, importRecord);
-                    DemoDatabase.SaveChanges();
-
-                    // 5. Refresh local list
-                    AllRecords.Insert(0, importRecord);
-                    FilterRecords();
-
-                    StatusMessage = $"✓ Successfully imported \"{importRecord.FileName}\" — {result.Records.Count} employees, Period: {importRecord.PeriodRange}";
+                    StatusMessage = $"✓ Successfully imported \"{Path.GetFileName(dialog.FileName)}\" — {result.Records.Count} employees";
                 }
                 catch (Exception ex)
                 {
@@ -159,13 +204,26 @@ namespace PayrollSystem.ViewModels
         {
             if (_pendingDeleteRecord != null)
             {
-                DemoDatabase.BiometricsImports.Remove(_pendingDeleteRecord);
-                DemoDatabase.SaveChanges();
+                try
+                {
+                    if (DatabaseHelper.TestConnection())
+                    {
+                        using var conn = DatabaseHelper.GetConnection();
+                        conn.Open();
+                        using var cmd = new SqliteCommand("DELETE FROM biometrics_imports WHERE id=@id", conn);
+                        cmd.Parameters.AddWithValue("@id", _pendingDeleteRecord.Id);
+                        cmd.ExecuteNonQuery();
+                    }
+                    
+                    AllRecords.Remove(_pendingDeleteRecord);
+                    FilterRecords();
+                    StatusMessage = $"✓ Deleted biometrics import: {_pendingDeleteRecord.FileName}";
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Error deleting: {ex.Message}";
+                }
 
-                AllRecords.Remove(_pendingDeleteRecord);
-                FilterRecords();
-
-                StatusMessage = $"✓ Deleted biometrics import: {_pendingDeleteRecord.FileName}";
                 _pendingDeleteRecord = null;
             }
             IsDeleteModalVisible = false;

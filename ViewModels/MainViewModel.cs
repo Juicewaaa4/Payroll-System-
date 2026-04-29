@@ -46,6 +46,20 @@ namespace PayrollSystem.ViewModels
             set => SetProperty(ref _isHelpModalVisible, value);
         }
 
+        // --- Appearance (Dark Mode) ---
+        public bool IsDarkMode
+        {
+            get => App.IsDarkMode();
+            set
+            {
+                if (App.IsDarkMode() != value)
+                {
+                    App.ChangeTheme(value);
+                    OnPropertyChanged(nameof(IsDarkMode));
+                }
+            }
+        }
+
         // Navigation Commands
         public ICommand NavigateDashboardCommand { get; }
         public ICommand NavigateEmployeesCommand { get; }

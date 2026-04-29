@@ -4,13 +4,13 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
+using PayrollSystem.Models;
 
 namespace PayrollSystem.ViewModels
 {
@@ -69,10 +69,10 @@ namespace PayrollSystem.ViewModels
         // ═══════════════════════════════════════════════════════════
         // BACKUP & RESTORE properties
         // ═══════════════════════════════════════════════════════════
-        private string _backupStatusMessage = "";
+        private string _backupStatusMessage = "Backup & Restore is now managed via MySQL.";
         public string BackupStatusMessage { get => _backupStatusMessage; set => SetProperty(ref _backupStatusMessage, value); }
 
-        private string _lastBackupInfo = "No backup created yet";
+        private string _lastBackupInfo = "Use MySQL tools (e.g. phpMyAdmin, mysqldump) to manage backups.";
         public string LastBackupInfo { get => _lastBackupInfo; set => SetProperty(ref _lastBackupInfo, value); }
 
         private string _dataStats = "";
@@ -192,37 +192,28 @@ namespace PayrollSystem.ViewModels
             Users.Clear();
             try
             {
-                if (!DatabaseHelper.TestConnection()) { LoadDemoUsers(); return; }
+                if (!DatabaseHelper.TestConnection()) return;
 
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
-                using var cmd = new MySqlCommand("SELECT id, username, full_name, role FROM users WHERE is_active=1", conn);
+                using var cmd = new SqliteCommand("SELECT id, username, full_name, role FROM users WHERE is_active=1", conn);
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
                     Users.Add(new UserItem
                     {
-                        Id = reader.GetInt32("id"),
-                        Username = reader.GetString("username"),
-                        FullName = reader.GetString("full_name"),
-                        Role = reader.GetString("role"),
+                        Id = reader.GetInt32(reader.GetOrdinal("id")),
+                        Username = reader.GetString(reader.GetOrdinal("username")),
+                        FullName = reader.GetString(reader.GetOrdinal("full_name")),
+                        Role = reader.GetString(reader.GetOrdinal("role")),
                         IsActive = true
                     });
                 }
-
-                // --- MAGIC SYNC ---
-                DemoDatabase.Initialize();
-                DemoDatabase.Users.Clear();
-                foreach(var u in Users) { DemoDatabase.Users.Add(u); }
-                DemoDatabase.SaveChanges();
             }
-            catch { LoadDemoUsers(); }
-        }
-
-        private void LoadDemoUsers()
-        {
-            DemoDatabase.Initialize();
-            foreach (var u in DemoDatabase.Users) if (u.IsActive) Users.Add(u);
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error loading users: {ex.Message}";
+            }
         }
 
         private void SaveUser()
@@ -235,59 +226,34 @@ namespace PayrollSystem.ViewModels
 
             try
             {
-                if (DatabaseHelper.TestConnection())
-                {
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
+                if (!DatabaseHelper.TestConnection()) return;
 
-                    if (_selectedUser == null) 
-                    {
-                        if (string.IsNullOrWhiteSpace(FormPassword)) FormPassword = "password123"; // default fallback
-                        using var cmd = new MySqlCommand("INSERT INTO users (username, password_hash, full_name, role) VALUES (@u, @p, @f, @r)", conn);
-                        cmd.Parameters.AddWithValue("@u", FormUsername);
-                        cmd.Parameters.AddWithValue("@p", FormPassword);
-                        cmd.Parameters.AddWithValue("@f", FormFullName);
-                        cmd.Parameters.AddWithValue("@r", FormRole);
-                        cmd.ExecuteNonQuery();
-                    }
-                    else
-                    {
-                        var updateQuery = "UPDATE users SET username=@u, full_name=@f, role=@r" +
-                                        (!string.IsNullOrWhiteSpace(FormPassword) ? ", password_hash=@p" : "") +
-                                        " WHERE id=@id";
-                        using var cmd = new MySqlCommand(updateQuery, conn);
-                        cmd.Parameters.AddWithValue("@u", FormUsername);
-                        if (!string.IsNullOrWhiteSpace(FormPassword)) cmd.Parameters.AddWithValue("@p", FormPassword);
-                        cmd.Parameters.AddWithValue("@f", FormFullName);
-                        cmd.Parameters.AddWithValue("@r", FormRole);
-                        cmd.Parameters.AddWithValue("@id", _selectedUser.Id);
-                        cmd.ExecuteNonQuery();
-                    }
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+
+                var hashedPwd = string.IsNullOrWhiteSpace(FormPassword) ? PayrollSystem.Utilities.PasswordHelper.HashPassword("password123") : PayrollSystem.Utilities.PasswordHelper.HashPassword(FormPassword);
+
+                if (_selectedUser == null) 
+                {
+                    using var cmd = new SqliteCommand("INSERT INTO users (username, password_hash, full_name, role) VALUES (@u, @p, @f, @r)", conn);
+                    cmd.Parameters.AddWithValue("@u", FormUsername);
+                    cmd.Parameters.AddWithValue("@p", hashedPwd);
+                    cmd.Parameters.AddWithValue("@f", FormFullName);
+                    cmd.Parameters.AddWithValue("@r", FormRole);
+                    cmd.ExecuteNonQuery();
                 }
                 else
                 {
-                    if (_selectedUser == null)
-                    {
-                        var newId = DemoDatabase.Users.Count > 0 ? DemoDatabase.Users.Max(u => u.Id) + 1 : 1;
-                        if (string.IsNullOrWhiteSpace(FormPassword)) FormPassword = "password123";
-                        DemoDatabase.Users.Add(new UserItem
-                        {
-                            Id = newId, Username = FormUsername, PasswordHash = FormPassword,
-                            FullName = FormFullName, Role = FormRole, IsActive = true
-                        });
-                    }
-                    else
-                    {
-                        var existing = DemoDatabase.Users.FirstOrDefault(u => u.Id == _selectedUser.Id);
-                        if (existing != null)
-                        {
-                            existing.Username = FormUsername;
-                            existing.FullName = FormFullName;
-                            existing.Role = FormRole;
-                            if (!string.IsNullOrWhiteSpace(FormPassword)) existing.PasswordHash = FormPassword;
-                        }
-                    }
-                    DemoDatabase.SaveChanges();
+                    var updateQuery = "UPDATE users SET username=@u, full_name=@f, role=@r" +
+                                      (!string.IsNullOrWhiteSpace(FormPassword) ? ", password_hash=@p" : "") +
+                                      " WHERE id=@id";
+                    using var cmd = new SqliteCommand(updateQuery, conn);
+                    cmd.Parameters.AddWithValue("@u", FormUsername);
+                    if (!string.IsNullOrWhiteSpace(FormPassword)) cmd.Parameters.AddWithValue("@p", hashedPwd);
+                    cmd.Parameters.AddWithValue("@f", FormFullName);
+                    cmd.Parameters.AddWithValue("@r", FormRole);
+                    cmd.Parameters.AddWithValue("@id", _selectedUser.Id);
+                    cmd.ExecuteNonQuery();
                 }
 
                 IsUserFormVisible = false;
@@ -315,19 +281,14 @@ namespace PayrollSystem.ViewModels
 
             try
             {
-                if (DatabaseHelper.TestConnection())
-                {
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
-                    using var cmd = new MySqlCommand("UPDATE users SET is_active=0 WHERE id=@id", conn);
-                    cmd.Parameters.AddWithValue("@id", user.Id);
-                    cmd.ExecuteNonQuery();
-                }
-                else
-                {
-                    var demoUser = DemoDatabase.Users.FirstOrDefault(u => u.Id == user.Id);
-                    if (demoUser != null) { DemoDatabase.Users.Remove(demoUser); DemoDatabase.SaveChanges(); }
-                }
+                if (!DatabaseHelper.TestConnection()) return;
+
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+                using var cmd = new SqliteCommand("UPDATE users SET is_active=0 WHERE id=@id", conn);
+                cmd.Parameters.AddWithValue("@id", user.Id);
+                cmd.ExecuteNonQuery();
+
                 StatusMessage = "User deleted.";
                 LoadUsers();
             }
@@ -341,35 +302,26 @@ namespace PayrollSystem.ViewModels
             Departments.Clear();
             try
             {
-                if (!DatabaseHelper.TestConnection()) { LoadDemoDepartments(); return; }
+                if (!DatabaseHelper.TestConnection()) return;
 
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
-                using var cmd = new MySqlCommand("SELECT id, name, description FROM departments WHERE is_active=1", conn);
+                using var cmd = new SqliteCommand("SELECT id, name, description FROM departments WHERE is_active=1", conn);
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
                     Departments.Add(new DepartmentItem
                     {
-                        Id = reader.GetInt32("id"),
-                        Name = reader.GetString("name"),
-                        Description = reader.IsDBNull(2) ? "" : reader.GetString("description")
+                        Id = reader.GetInt32(reader.GetOrdinal("id")),
+                        Name = reader.GetString(reader.GetOrdinal("name")),
+                        Description = reader.IsDBNull(2) ? "" : reader.GetString(reader.GetOrdinal("description"))
                     });
                 }
-
-                // --- MAGIC SYNC ---
-                DemoDatabase.Initialize();
-                DemoDatabase.Departments.Clear();
-                foreach(var d in Departments) { DemoDatabase.Departments.Add(d); }
-                DemoDatabase.SaveChanges();
             }
-            catch { LoadDemoDepartments(); }
-        }
-
-        private void LoadDemoDepartments()
-        {
-            DemoDatabase.Initialize();
-            foreach (var d in DemoDatabase.Departments) Departments.Add(d);
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error loading departments: {ex.Message}";
+            }
         }
 
         private void SaveDepartment()
@@ -382,47 +334,25 @@ namespace PayrollSystem.ViewModels
 
             try
             {
-                if (DatabaseHelper.TestConnection())
-                {
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
+                if (!DatabaseHelper.TestConnection()) return;
 
-                    if (_selectedDept == null)
-                    {
-                        using var cmd = new MySqlCommand("INSERT INTO departments (name, description) VALUES (@n, @d)", conn);
-                        cmd.Parameters.AddWithValue("@n", FormDeptName);
-                        cmd.Parameters.AddWithValue("@d", FormDeptDesc);
-                        cmd.ExecuteNonQuery();
-                    }
-                    else
-                    {
-                        using var cmd = new MySqlCommand("UPDATE departments SET name=@n, description=@d WHERE id=@id", conn);
-                        cmd.Parameters.AddWithValue("@n", FormDeptName);
-                        cmd.Parameters.AddWithValue("@d", FormDeptDesc);
-                        cmd.Parameters.AddWithValue("@id", _selectedDept.Id);
-                        cmd.ExecuteNonQuery();
-                    }
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+
+                if (_selectedDept == null)
+                {
+                    using var cmd = new SqliteCommand("INSERT INTO departments (name, description) VALUES (@n, @d)", conn);
+                    cmd.Parameters.AddWithValue("@n", FormDeptName);
+                    cmd.Parameters.AddWithValue("@d", FormDeptDesc);
+                    cmd.ExecuteNonQuery();
                 }
                 else
                 {
-                    if (_selectedDept == null)
-                    {
-                        var newId = DemoDatabase.Departments.Count > 0 ? DemoDatabase.Departments.Max(d => d.Id) + 1 : 1;
-                        DemoDatabase.Departments.Add(new DepartmentItem
-                        {
-                            Id = newId, Name = FormDeptName, Description = FormDeptDesc
-                        });
-                    }
-                    else
-                    {
-                        var existing = DemoDatabase.Departments.FirstOrDefault(d => d.Id == _selectedDept.Id);
-                        if (existing != null)
-                        {
-                            existing.Name = FormDeptName;
-                            existing.Description = FormDeptDesc;
-                        }
-                    }
-                    DemoDatabase.SaveChanges();
+                    using var cmd = new SqliteCommand("UPDATE departments SET name=@n, description=@d WHERE id=@id", conn);
+                    cmd.Parameters.AddWithValue("@n", FormDeptName);
+                    cmd.Parameters.AddWithValue("@d", FormDeptDesc);
+                    cmd.Parameters.AddWithValue("@id", _selectedDept.Id);
+                    cmd.ExecuteNonQuery();
                 }
 
                 IsDeptFormVisible = false;
@@ -449,19 +379,14 @@ namespace PayrollSystem.ViewModels
 
             try
             {
-                if (DatabaseHelper.TestConnection())
-                {
-                    using var conn = DatabaseHelper.GetConnection();
-                    conn.Open();
-                    using var cmd = new MySqlCommand("UPDATE departments SET is_active=0 WHERE id=@id", conn);
-                    cmd.Parameters.AddWithValue("@id", dept.Id);
-                    cmd.ExecuteNonQuery();
-                }
-                else
-                {
-                    var demoDept = DemoDatabase.Departments.FirstOrDefault(d => d.Id == dept.Id);
-                    if (demoDept != null) { DemoDatabase.Departments.Remove(demoDept); DemoDatabase.SaveChanges(); }
-                }
+                if (!DatabaseHelper.TestConnection()) return;
+
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+                using var cmd = new SqliteCommand("UPDATE departments SET is_active=0 WHERE id=@id", conn);
+                cmd.Parameters.AddWithValue("@id", dept.Id);
+                cmd.ExecuteNonQuery();
+
                 StatusMessage = "Department deleted.";
                 LoadDepartments();
             }
@@ -474,199 +399,40 @@ namespace PayrollSystem.ViewModels
 
         private void LoadBackupInfo()
         {
-            DemoDatabase.Initialize();
-
-            int empCount = DemoDatabase.Employees.Count;
-            int payrollCount = DemoDatabase.PayrollHistory.Count;
-            int userCount = DemoDatabase.Users.Count;
-            int deptCount = DemoDatabase.Departments.Count;
-            int bioCount = DemoDatabase.BiometricsImports.Count;
-
-            DataStats = $"👥 {empCount} employees  •  💵 {payrollCount} payroll records  •  👤 {userCount} users  •  🏢 {deptCount} departments  •  📅 {bioCount} biometric imports";
-
-            // Check for most recent backup in default location
             try
             {
-                var backupFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PayrollSystem Backups");
-                if (Directory.Exists(backupFolder))
-                {
-                    var latestBackup = Directory.GetFiles(backupFolder, "*.json")
-                        .OrderByDescending(f => File.GetLastWriteTime(f))
-                        .FirstOrDefault();
+                if (!DatabaseHelper.TestConnection()) return;
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
 
-                    if (latestBackup != null)
-                    {
-                        var fileInfo = new FileInfo(latestBackup);
-                        LastBackupInfo = $"📁 {fileInfo.Name}\n📅 {fileInfo.LastWriteTime:MMM dd, yyyy  h:mm tt}\n💾 {FormatFileSize(fileInfo.Length)}";
-                    }
-                    else
-                    {
-                        LastBackupInfo = "No backup files found in default location.";
-                    }
-                }
-                else
-                {
-                    LastBackupInfo = "No backup files found. Create your first backup!";
-                }
+                using var cmdEmp = new SqliteCommand("SELECT COUNT(*) FROM employees WHERE is_active=1", conn);
+                int empCount = Convert.ToInt32(cmdEmp.ExecuteScalar());
+
+                using var cmdPay = new SqliteCommand("SELECT COUNT(*) FROM payroll", conn);
+                int payrollCount = Convert.ToInt32(cmdPay.ExecuteScalar());
+
+                using var cmdUsr = new SqliteCommand("SELECT COUNT(*) FROM users WHERE is_active=1", conn);
+                int userCount = Convert.ToInt32(cmdUsr.ExecuteScalar());
+
+                using var cmdDept = new SqliteCommand("SELECT COUNT(*) FROM departments WHERE is_active=1", conn);
+                int deptCount = Convert.ToInt32(cmdDept.ExecuteScalar());
+
+                DataStats = $"👥 {empCount} employees  •  💵 {payrollCount} payroll records  •  👤 {userCount} users  •  🏢 {deptCount} departments";
             }
             catch
             {
-                LastBackupInfo = "Unable to check backup history.";
+                DataStats = "Unable to fetch stats.";
             }
-        }
-
-        private static string FormatFileSize(long bytes)
-        {
-            if (bytes < 1024) return $"{bytes} B";
-            if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
-            return $"{bytes / (1024.0 * 1024.0):F1} MB";
         }
 
         private void PerformBackup()
         {
-            try
-            {
-                IsBackupInProgress = true;
-                BackupStatusMessage = "Preparing backup...";
-
-                DemoDatabase.Initialize();
-
-                // Build the backup data object
-                var backupData = new BackupData
-                {
-                    BackupTimestamp = DateTime.Now,
-                    AppVersion = "1.0",
-                    Employees = DemoDatabase.Employees.ToList(),
-                    PayrollHistory = DemoDatabase.PayrollHistory.ToList(),
-                    Users = DemoDatabase.Users.ToList(),
-                    Departments = DemoDatabase.Departments.ToList(),
-                    BiometricsImports = DemoDatabase.BiometricsImports.ToList()
-                };
-
-                // Default folder
-                var defaultFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PayrollSystem Backups");
-                if (!Directory.Exists(defaultFolder)) Directory.CreateDirectory(defaultFolder);
-
-                var saveDialog = new SaveFileDialog
-                {
-                    Title = "Save Payroll System Backup",
-                    Filter = "JSON Backup (*.json)|*.json",
-                    FileName = $"PayrollBackup_{DateTime.Now:yyyyMMdd_HHmmss}",
-                    DefaultExt = ".json",
-                    InitialDirectory = defaultFolder
-                };
-
-                if (saveDialog.ShowDialog() != true)
-                {
-                    IsBackupInProgress = false;
-                    BackupStatusMessage = "";
-                    return;
-                }
-
-                var opts = new JsonSerializerOptions { WriteIndented = true };
-                var json = JsonSerializer.Serialize(backupData, opts);
-                File.WriteAllText(saveDialog.FileName, json);
-
-                var fileInfo = new FileInfo(saveDialog.FileName);
-                BackupStatusMessage = $"✅ Backup saved successfully!\n📁 {fileInfo.Name}  •  💾 {FormatFileSize(fileInfo.Length)}";
-                LastBackupInfo = $"📁 {fileInfo.Name}\n📅 {fileInfo.LastWriteTime:MMM dd, yyyy  h:mm tt}\n💾 {FormatFileSize(fileInfo.Length)}";
-
-                IsBackupInProgress = false;
-            }
-            catch (Exception ex)
-            {
-                BackupStatusMessage = $"❌ Backup failed: {ex.Message}";
-                IsBackupInProgress = false;
-            }
+            BackupStatusMessage = "Backup & Restore is now managed via MySQL directly.";
         }
 
         private void PerformRestore()
         {
-            try
-            {
-                var defaultFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PayrollSystem Backups");
-
-                var openDialog = new OpenFileDialog
-                {
-                    Title = "Select Payroll System Backup File",
-                    Filter = "JSON Backup (*.json)|*.json",
-                    DefaultExt = ".json",
-                    InitialDirectory = Directory.Exists(defaultFolder) ? defaultFolder : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-                };
-
-                if (openDialog.ShowDialog() != true) return;
-
-                // Read and validate
-                var json = File.ReadAllText(openDialog.FileName);
-                var backupData = JsonSerializer.Deserialize<BackupData>(json);
-
-                if (backupData == null)
-                {
-                    BackupStatusMessage = "❌ Invalid backup file — could not parse data.";
-                    return;
-                }
-
-                // Build summary for confirmation
-                int empCount = backupData.Employees?.Count ?? 0;
-                int payCount = backupData.PayrollHistory?.Count ?? 0;
-                int usrCount = backupData.Users?.Count ?? 0;
-                int dptCount = backupData.Departments?.Count ?? 0;
-                int bioCount = backupData.BiometricsImports?.Count ?? 0;
-                var backupDate = backupData.BackupTimestamp.ToString("MMM dd, yyyy  h:mm tt");
-
-                var confirmResult = MessageBox.Show(
-                    $"🔄 Restore from backup?\n\n" +
-                    $"📅 Backup Date: {backupDate}\n" +
-                    $"👥 Employees: {empCount}\n" +
-                    $"💵 Payroll Records: {payCount}\n" +
-                    $"👤 Users: {usrCount}\n" +
-                    $"🏢 Departments: {dptCount}\n" +
-                    $"📅 Biometric Imports: {bioCount}\n\n" +
-                    $"⚠️ This will REPLACE all current data. Continue?",
-                    "Confirm Restore",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (confirmResult != MessageBoxResult.Yes) return;
-
-                IsBackupInProgress = true;
-                BackupStatusMessage = "Restoring data...";
-
-                // Restore all collections
-                DemoDatabase.Initialize();
-
-                DemoDatabase.Employees.Clear();
-                if (backupData.Employees != null)
-                    foreach (var emp in backupData.Employees) DemoDatabase.Employees.Add(emp);
-
-                DemoDatabase.PayrollHistory.Clear();
-                if (backupData.PayrollHistory != null)
-                    foreach (var rec in backupData.PayrollHistory) DemoDatabase.PayrollHistory.Add(rec);
-
-                DemoDatabase.Users.Clear();
-                if (backupData.Users != null)
-                    foreach (var usr in backupData.Users) DemoDatabase.Users.Add(usr);
-
-                DemoDatabase.Departments.Clear();
-                if (backupData.Departments != null)
-                    foreach (var dept in backupData.Departments) DemoDatabase.Departments.Add(dept);
-
-                DemoDatabase.BiometricsImports.Clear();
-                if (backupData.BiometricsImports != null)
-                    foreach (var bio in backupData.BiometricsImports) DemoDatabase.BiometricsImports.Add(bio);
-
-                DemoDatabase.SaveChanges();
-
-                BackupStatusMessage = $"✅ Restore completed successfully!\n📅 Restored from: {backupDate}\n👥 {empCount} employees  •  💵 {payCount} payroll records";
-                LoadBackupInfo();
-
-                IsBackupInProgress = false;
-            }
-            catch (Exception ex)
-            {
-                BackupStatusMessage = $"❌ Restore failed: {ex.Message}";
-                IsBackupInProgress = false;
-            }
+            BackupStatusMessage = "Backup & Restore is now managed via MySQL directly.";
         }
 
         // ═════════════════════════════════════════════════════════════
@@ -679,68 +445,68 @@ namespace PayrollSystem.ViewModels
             ThirteenthMonthStatus = "";
             HasThirteenthMonthData = false;
 
-            DemoDatabase.Initialize();
-
-            // Get all payroll records for the selected year
-            var yearRecords = DemoDatabase.PayrollHistory
-                .Where(r => r.PayrollDate.Year == SelectedYear)
-                .ToList();
-
-            if (yearRecords.Count == 0)
+            if (!DatabaseHelper.TestConnection())
             {
-                ThirteenthMonthStatus = $"No payroll records found for year {SelectedYear}. Process payroll first.";
-                TotalThirteenthMonthPay = "₱0.00";
-                TotalBasicSalary = "₱0.00";
-                TotalEmployeesComputed = 0;
+                ThirteenthMonthStatus = "Database connection required.";
                 return;
             }
 
-            // Group by employee and compute
-            var grouped = yearRecords
-                .GroupBy(r => r.EmpNumber)
-                .Select(g =>
-                {
-                    var first = g.First();
-                    // Total basic salary = sum of (DailyRate × WorkDays) for all records
-                    // We use GrossRaw minus extras (OT, Holiday, Allowance, Bonus) to get base salary
-                    decimal totalBasic = 0;
-                    foreach (var rec in g)
-                    {
-                        // Find the employee's daily rate from DemoDatabase
-                        var emp = DemoDatabase.Employees.FirstOrDefault(e => e.EmpNumber == rec.EmpNumber);
-                        decimal dailyRate = emp?.DailyRate ?? 0;
-                        decimal basicForPeriod = dailyRate * rec.WorkDays;
-                        totalBasic += basicForPeriod;
-                    }
+            try
+            {
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
 
+                // Group by employee and compute
+                using var cmd = new SqliteCommand(@"
+                    SELECT e.emp_number, e.first_name || ' ' || e.last_name as employee_name, 
+                           COUNT(p.id) as payroll_count, 
+                           SUM(p.basic_salary * p.work_days) as total_basic 
+                    FROM payroll p 
+                    JOIN employees e ON p.employee_id = e.id 
+                    WHERE strftime('%Y', p.payroll_date) = @y 
+                    GROUP BY e.emp_number, employee_name 
+                    ORDER BY e.emp_number", conn);
+                cmd.Parameters.AddWithValue("@y", SelectedYear.ToString());
+
+                using var reader = cmd.ExecuteReader();
+                decimal grandTotalBasic = 0;
+                decimal grandTotal13th = 0;
+
+                while (reader.Read())
+                {
+                    decimal totalBasic = reader.GetDecimal(reader.GetOrdinal("total_basic"));
                     decimal thirteenthMonth = Math.Round(totalBasic / 12m, 2);
 
-                    return new ThirteenthMonthRecord
+                    ThirteenthMonthRecords.Add(new ThirteenthMonthRecord
                     {
-                        EmpNumber = first.EmpNumber,
-                        EmployeeName = first.EmployeeName,
-                        PayrollCount = g.Count(),
+                        EmpNumber = reader.GetString(reader.GetOrdinal("emp_number")),
+                        EmployeeName = reader.GetString(reader.GetOrdinal("employee_name")),
+                        PayrollCount = reader.GetInt32(reader.GetOrdinal("payroll_count")),
                         TotalBasicSalary = totalBasic,
                         TotalBasicSalaryFormatted = $"₱{totalBasic:N2}",
                         ThirteenthMonthPay = thirteenthMonth,
                         ThirteenthMonthPayFormatted = $"₱{thirteenthMonth:N2}"
-                    };
-                })
-                .OrderBy(r => r.EmpNumber)
-                .ToList();
+                    });
 
-            foreach (var rec in grouped)
-                ThirteenthMonthRecords.Add(rec);
+                    grandTotalBasic += totalBasic;
+                    grandTotal13th += thirteenthMonth;
+                }
 
-            decimal grandTotalBasic = grouped.Sum(r => r.TotalBasicSalary);
-            decimal grandTotal13th = grouped.Sum(r => r.ThirteenthMonthPay);
+                TotalBasicSalary = $"₱{grandTotalBasic:N2}";
+                TotalThirteenthMonthPay = $"₱{grandTotal13th:N2}";
+                TotalEmployeesComputed = ThirteenthMonthRecords.Count;
+                HasThirteenthMonthData = ThirteenthMonthRecords.Count > 0;
 
-            TotalBasicSalary = $"₱{grandTotalBasic:N2}";
-            TotalThirteenthMonthPay = $"₱{grandTotal13th:N2}";
-            TotalEmployeesComputed = grouped.Count;
-            HasThirteenthMonthData = grouped.Count > 0;
+                if (HasThirteenthMonthData)
+                    ThirteenthMonthStatus = $"✅ Generated 13th-month pay for {ThirteenthMonthRecords.Count} employee(s) — Year {SelectedYear}";
+                else
+                    ThirteenthMonthStatus = $"No payroll records found for year {SelectedYear}.";
 
-            ThirteenthMonthStatus = $"✅ Generated 13th-month pay for {grouped.Count} employee(s) — Year {SelectedYear}";
+            }
+            catch (Exception ex)
+            {
+                ThirteenthMonthStatus = $"Error: {ex.Message}";
+            }
         }
 
         private void Export13thMonthToExcel()
@@ -959,21 +725,6 @@ namespace PayrollSystem.ViewModels
             using var writer = new StreamWriter(stream, Encoding.UTF8);
             writer.Write(content);
         }
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // Supporting Models
-    // ═══════════════════════════════════════════════════════════
-
-    public class BackupData
-    {
-        public DateTime BackupTimestamp { get; set; }
-        public string AppVersion { get; set; } = "1.0";
-        public List<EmployeeItem>? Employees { get; set; }
-        public List<PayrollHistoryRecord>? PayrollHistory { get; set; }
-        public List<UserItem>? Users { get; set; }
-        public List<DepartmentItem>? Departments { get; set; }
-        public List<BiometricsImportRecord>? BiometricsImports { get; set; }
     }
 
     public class ThirteenthMonthRecord

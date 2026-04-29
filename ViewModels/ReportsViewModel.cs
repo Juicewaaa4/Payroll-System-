@@ -8,9 +8,9 @@ using System.Windows;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
-using PayrollSystem.ViewModels;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
 using Microsoft.Win32;
+using PayrollSystem.Models;
 
 namespace PayrollSystem.ViewModels
 {
@@ -96,93 +96,85 @@ namespace PayrollSystem.ViewModels
         public void LoadData()
         {
             _allPayrollRecords.Clear();
-
-            // Load employees for deduction search
-            DemoDatabase.Initialize();
             AllEmployees.Clear();
-            foreach (var emp in DemoDatabase.Employees) AllEmployees.Add(emp);
-            FilterAuditLogs();
-            FilterDeductionEmployees();
 
             try
             {
-                if (!DatabaseHelper.TestConnection()) { LoadDemoData(); return; }
+                if (!DatabaseHelper.TestConnection()) return;
 
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
-                using var cmd = new MySqlCommand(
-                    @"SELECT p.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.emp_number
+
+                // Load employees for deduction search
+                using var empCmd = new SqliteCommand("SELECT * FROM employees WHERE is_active=1", conn);
+                using var empReader = empCmd.ExecuteReader();
+                while (empReader.Read())
+                {
+                    AllEmployees.Add(new EmployeeItem
+                    {
+                        Id = empReader.GetInt32(empReader.GetOrdinal("id")),
+                        EmpNumber = empReader.GetString(empReader.GetOrdinal("emp_number")),
+                        FirstName = empReader.GetString(empReader.GetOrdinal("first_name")),
+                        LastName = empReader.GetString(empReader.GetOrdinal("last_name")),
+                        FullName = $"{empReader.GetString(empReader.GetOrdinal("first_name"))} {empReader.GetString(empReader.GetOrdinal("last_name"))}"
+                    });
+                }
+                empReader.Close();
+                FilterDeductionEmployees();
+
+                // Load Payroll
+                using var cmd = new SqliteCommand(
+                    @"SELECT p.*, e.first_name || ' ' || e.last_name as employee_name, e.emp_number,
+                             (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'SSS') as sss,
+                             (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'PAGIBIG') as pagibig,
+                             (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'PhilHealth') as philhealth,
+                             (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Loan') as loan,
+                             (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Other' AND d.name LIKE '%Late%') as late,
+                             (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Other' AND d.name LIKE '%Undertime%') as undertime,
+                             (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Other' AND d.name NOT LIKE '%Late%' AND d.name NOT LIKE '%Undertime%') as others
                       FROM payroll p JOIN employees e ON p.employee_id = e.id
                       WHERE p.payroll_date BETWEEN @start AND @end
                       ORDER BY p.payroll_date DESC", conn);
-                cmd.Parameters.AddWithValue("@start", StartDate);
-                cmd.Parameters.AddWithValue("@end", EndDate);
+                cmd.Parameters.AddWithValue("@start", StartDate.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@end", EndDate.ToString("yyyy-MM-dd"));
 
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
                     _allPayrollRecords.Add(new PayrollRecord
                     {
-                        Id = reader.GetInt32("id"),
-                        EmployeeName = reader.GetString("employee_name"),
-                        EmpNumber = reader.GetString("emp_number"),
-                        PayrollDate = reader.GetDateTime("payroll_date").ToString("MMM dd, yyyy  h:mm tt"),
-                        GrossSalary = $"₱{reader.GetDecimal("gross_salary"):N2}",
-                        GrossRaw = reader.GetDecimal("gross_salary"),
-                        Deductions = $"₱{reader.GetDecimal("total_deductions"):N2}",
-                        DeductionsRaw = reader.GetDecimal("total_deductions"),
-                        NetPay = $"₱{reader.GetDecimal("net_pay"):N2}",
-                        NetPayRaw = reader.GetDecimal("net_pay"),
-                        Status = reader.GetString("status")
+                        Id = reader.GetInt32(reader.GetOrdinal("id")),
+                        EmployeeName = reader.GetString(reader.GetOrdinal("employee_name")),
+                        EmpNumber = reader.GetString(reader.GetOrdinal("emp_number")),
+                        PayrollDate = DateTime.Parse(reader.GetString(reader.GetOrdinal("payroll_date"))).ToString("MMM dd, yyyy  h:mm tt"),
+                        GrossSalary = $"₱{reader.GetDecimal(reader.GetOrdinal("gross_salary")):N2}",
+                        GrossRaw = reader.GetDecimal(reader.GetOrdinal("gross_salary")),
+                        Deductions = $"₱{reader.GetDecimal(reader.GetOrdinal("total_deductions")):N2}",
+                        DeductionsRaw = reader.GetDecimal(reader.GetOrdinal("total_deductions")),
+                        NetPay = $"₱{reader.GetDecimal(reader.GetOrdinal("net_pay")):N2}",
+                        NetPayRaw = reader.GetDecimal(reader.GetOrdinal("net_pay")),
+                        Status = reader.GetString(reader.GetOrdinal("status")),
+                        Sss = reader.IsDBNull(reader.GetOrdinal("sss")) ? 0 : reader.GetDecimal(reader.GetOrdinal("sss")),
+                        Pagibig = reader.IsDBNull(reader.GetOrdinal("pagibig")) ? 0 : reader.GetDecimal(reader.GetOrdinal("pagibig")),
+                        Philhealth = reader.IsDBNull(reader.GetOrdinal("philhealth")) ? 0 : reader.GetDecimal(reader.GetOrdinal("philhealth")),
+                        Loan = reader.IsDBNull(reader.GetOrdinal("loan")) ? 0 : reader.GetDecimal(reader.GetOrdinal("loan")),
+                        Late = reader.IsDBNull(reader.GetOrdinal("late")) ? 0 : reader.GetDecimal(reader.GetOrdinal("late")),
+                        Undertime = reader.IsDBNull(reader.GetOrdinal("undertime")) ? 0 : reader.GetDecimal(reader.GetOrdinal("undertime")),
+                        Others = reader.IsDBNull(reader.GetOrdinal("others")) ? 0 : reader.GetDecimal(reader.GetOrdinal("others"))
                     });
                 }
 
-                if (_allPayrollRecords.Count == 0) LoadDemoData();
-                else UpdatePagedData();
+                if (_allPayrollRecords.Count == 0)
+                    StatusMessage = "No payroll records found for this period.";
+                else
+                    StatusMessage = "";
+
+                UpdatePagedData();
             }
-            catch { LoadDemoData(); }
-        }
-
-        private void LoadDemoData()
-        {
-            _allPayrollRecords.Clear();
-
-            // Pull from DemoDatabase payroll history (real processed records)
-            foreach (var rec in DemoDatabase.PayrollHistory)
+            catch (Exception ex)
             {
-                if (rec.PayrollDate >= StartDate && rec.PayrollDate <= EndDate.AddDays(1))
-                {
-                    _allPayrollRecords.Add(new PayrollRecord
-                    {
-                        Id = rec.Id,
-                        EmployeeName = rec.EmployeeName,
-                        EmpNumber = rec.EmpNumber,
-                        PayrollDate = rec.PayrollDateFormatted,
-                        GrossSalary = rec.GrossSalary,
-                        GrossRaw = rec.GrossRaw,
-                        Deductions = rec.Deductions,
-                        DeductionsRaw = rec.DeductionsRaw,
-                        NetPay = rec.NetPay,
-                        NetPayRaw = rec.NetPayRaw,
-                        Status = rec.Status,
-                        Sss = rec.Sss,
-                        Pagibig = rec.Pagibig,
-                        Philhealth = rec.Philhealth,
-                        Loan = rec.Loan,
-                        Late = rec.Late,
-                        Undertime = rec.Undertime,
-                        Others = rec.Others,
-                        OthersName = !string.IsNullOrWhiteSpace(rec.OthersName) ? rec.OthersName : "Others"
-                    });
-                }
+                StatusMessage = $"Error loading reports: {ex.Message}";
             }
-
-            if (_allPayrollRecords.Count == 0)
-                StatusMessage = "No payroll records found. Process payroll first to see records here.";
-            else
-                StatusMessage = "";
-
-            UpdatePagedData();
         }
 
         public void SortData(string column)
@@ -226,7 +218,6 @@ namespace PayrollSystem.ViewModels
                     break;
                 case "Date":
                 default:
-                    // ID is sequential and gives proper date sorting
                     query = _sortAscending ? query.OrderBy(x => x.Id) : query.OrderByDescending(x => x.Id);
                     break;
             }
@@ -265,27 +256,11 @@ namespace PayrollSystem.ViewModels
 
             var empNum = SelectedDeductionEmployee.EmpNumber;
 
-            foreach (var rec in DemoDatabase.PayrollHistory)
+            foreach (var rec in _allPayrollRecords)
             {
-                if (rec.EmpNumber == empNum && rec.PayrollDate >= StartDate && rec.PayrollDate <= EndDate.AddDays(1))
+                if (rec.EmpNumber == empNum)
                 {
-                    EmployeeDeductionRecords.Add(new PayrollRecord
-                    {
-                        PayrollDate = rec.PayrollDateFormatted,
-                        GrossSalary = rec.GrossSalary,
-                        GrossRaw = rec.GrossRaw,
-                        Deductions = rec.Deductions,
-                        DeductionsRaw = rec.DeductionsRaw,
-                        NetPay = rec.NetPay,
-                        NetPayRaw = rec.NetPayRaw,
-                        Sss = rec.Sss,
-                        Pagibig = rec.Pagibig,
-                        Philhealth = rec.Philhealth,
-                        Loan = rec.Loan,
-                        Late = rec.Late,
-                        Undertime = rec.Undertime,
-                        Others = rec.Others
-                    });
+                    EmployeeDeductionRecords.Add(rec);
 
                     TotalSss += rec.Sss;
                     TotalPagibig += rec.Pagibig;
@@ -304,15 +279,7 @@ namespace PayrollSystem.ViewModels
         private void FilterAuditLogs()
         {
             FilteredAuditLogs.Clear();
-            DemoDatabase.Initialize();
-
-            IEnumerable<AuditLogRecord> query = DemoDatabase.AuditLogs
-                .Where(a => a.Timestamp.Date == AuditDate.Date);
-
-            foreach (var log in query.OrderByDescending(a => a.Timestamp).Take(100))
-                FilteredAuditLogs.Add(log);
-
-            HasAuditLogs = FilteredAuditLogs.Count > 0;
+            HasAuditLogs = false; // Audit logs deprecated in MySQL migration
         }
 
         private void ExportToExcel()
@@ -444,7 +411,6 @@ namespace PayrollSystem.ViewModels
             }
             ssXml.Append("</sst>");
 
-            // Styles with zebra stripe support: s=8 (highlighted text), s=9 (highlighted currency)
             var styles = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
 <styleSheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">
   <numFmts count=""1"">

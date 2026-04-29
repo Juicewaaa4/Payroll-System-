@@ -8,7 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
+using PayrollSystem.Models;
 
 namespace PayrollSystem.ViewModels
 {
@@ -122,18 +123,15 @@ namespace PayrollSystem.ViewModels
                     {
                         using var conn = DatabaseHelper.GetConnection();
                         conn.Open();
-                        using var cmd = new MySqlCommand("DELETE FROM payroll WHERE id=@id", conn);
+                        using var cmd = new SqliteCommand("DELETE FROM payroll WHERE id=@id", conn);
                         cmd.Parameters.AddWithValue("@id", _pendingDeleteRecord.Record.Id);
                         cmd.ExecuteNonQuery();
                     }
                     catch { }
                 }
 
-                DemoDatabase.PayrollHistory.Remove(_pendingDeleteRecord.Record);
                 PayrollRecords.Remove(_pendingDeleteRecord);
                 StatusMessage = $"✓ Successfully deleted payroll record for {_pendingDeleteRecord.Record.EmployeeName}.";
-                DemoDatabase.LogAction("Payroll Deleted",
-                    $"{_pendingDeleteRecord.Record.EmployeeName} ({_pendingDeleteRecord.Record.EmpNumber}) — Net: {_pendingDeleteRecord.Record.NetPay}");
                 _pendingDeleteRecord = null;
             }
             IsDeleteModalVisible = false;
@@ -145,10 +143,18 @@ namespace PayrollSystem.ViewModels
             
             record.Record.Status = "Paid";
             
-            // Sync with memory database to reflect globally
-            DemoDatabase.SaveChanges(); 
-            DemoDatabase.LogAction("Payroll Approved",
-                $"{record.Record.EmployeeName} ({record.Record.EmpNumber}) — Net: {record.Record.NetPay} marked as Paid.");
+            if (DatabaseHelper.TestConnection())
+            {
+                try
+                {
+                    using var conn = DatabaseHelper.GetConnection();
+                    conn.Open();
+                    using var cmd = new SqliteCommand("UPDATE payroll SET status='Paid' WHERE id=@id", conn);
+                    cmd.Parameters.AddWithValue("@id", record.Record.Id);
+                    cmd.ExecuteNonQuery();
+                }
+                catch { }
+            }
 
             // Hard refresh local binding
             var idx = PayrollRecords.IndexOf(record);
@@ -241,17 +247,15 @@ namespace PayrollSystem.ViewModels
             _editingRecord.Record.NetPayRaw = net;
             _editingRecord.Record.NetPay = $"₱{net:N2}";
 
-            // Sync Database (MySQL if available, or DemoDatabase)
+            // Sync to MySQL Database
             if (DatabaseHelper.TestConnection())
             {
                 try
                 {
                     using var conn = DatabaseHelper.GetConnection();
                     conn.Open();
-                    // Assuming we have the payroll_id. Wait, DemoDatabase's PayrollHistoryRecord Id corresponds to what? 
-                    // To be safe, for now we will just log it or update via Emp/Date.
-                    // Actually, modifying past payroll fundamentally requires a matching ID. If ID mapped to payroll.id, we can execute:
-                    using var cmd = new MySqlCommand(@"UPDATE payroll SET 
+                    // Update payroll record by its MySQL ID
+                    using var cmd = new SqliteCommand(@"UPDATE payroll SET 
                         gross_salary=@gross, total_deductions=@ded, net_pay=@net 
                         WHERE id=@id", conn);
                     cmd.Parameters.AddWithValue("@gross", gross);
@@ -263,7 +267,7 @@ namespace PayrollSystem.ViewModels
                 catch { /* Ignore if it fails */ }
             }
 
-            DemoDatabase.SaveChanges();
+            // Database updated
 
             // Refresh UI safely without crashing WPF DataGrid
             var idx = PayrollRecords.IndexOf(_editingRecord);
@@ -286,67 +290,49 @@ namespace PayrollSystem.ViewModels
 
             try
             {
-                if (!DatabaseHelper.TestConnection()) { LoadDemoData(); return; }
+                if (!DatabaseHelper.TestConnection()) { StatusMessage = "Cannot connect to database."; return; }
 
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
-                using var cmd = new MySqlCommand(
-                    @"SELECT p.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.emp_number,
+                using var cmd = new SqliteCommand(
+                    @"SELECT p.*, e.first_name || ' ' || e.last_name as employee_name, e.emp_number,
                              e.position, e.daily_rate
                       FROM payroll p JOIN employees e ON p.employee_id = e.id
                       WHERE p.payroll_date BETWEEN @start AND @end
                       ORDER BY e.last_name, p.payroll_date", conn);
-                cmd.Parameters.AddWithValue("@start", StartDate);
-                cmd.Parameters.AddWithValue("@end", EndDate.AddDays(1));
+                cmd.Parameters.AddWithValue("@start", StartDate.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@end", EndDate.AddDays(1).ToString("yyyy-MM-dd"));
 
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
                     var rec = new PayrollHistoryRecord
                     {
-                        EmpNumber = reader.GetString("emp_number"),
-                        EmployeeName = reader.GetString("employee_name"),
-                        PayrollDateFormatted = reader.GetDateTime("payroll_date").ToString("MMM dd, yyyy"),
-                        GrossSalary = $"₱{reader.GetDecimal("gross_salary"):N2}",
-                        NetPay = $"₱{reader.GetDecimal("net_pay"):N2}",
-                        Deductions = $"₱{reader.GetDecimal("total_deductions"):N2}",
-                        Status = reader.GetString("status")
+                        EmpNumber = reader.GetString(reader.GetOrdinal("emp_number")),
+                        EmployeeName = reader.GetString(reader.GetOrdinal("employee_name")),
+                        PayrollDateFormatted = DateTime.Parse(reader.GetString(reader.GetOrdinal("payroll_date"))).ToString("MMM dd, yyyy"),
+                        GrossSalary = $"₱{reader.GetDecimal(reader.GetOrdinal("gross_salary")):N2}",
+                        NetPay = $"₱{reader.GetDecimal(reader.GetOrdinal("net_pay")):N2}",
+                        Deductions = $"₱{reader.GetDecimal(reader.GetOrdinal("total_deductions")):N2}",
+                        Status = reader.GetString(reader.GetOrdinal("status"))
                     };
                     
                     // We need these for printing
-                    var position = reader.GetString("position");
-                    var basicPay = reader.GetDecimal("basic_salary");
+                    var position = reader.GetString(reader.GetOrdinal("position"));
+                    var basicPay = reader.GetDecimal(reader.GetOrdinal("basic_salary"));
 
                     PayrollRecords.Add(new BatchPrintRecord(rec, position, basicPay));
                 }
 
-                if (PayrollRecords.Count == 0) LoadDemoData();
+                if (PayrollRecords.Count == 0)
+                    StatusMessage = "No processed payrolls found for this period.";
+                else
+                    StatusMessage = "";
             }
-            catch { LoadDemoData(); }
-        }
-
-        private void LoadDemoData()
-        {
-            PayrollRecords.Clear();
-            DemoDatabase.Initialize();
-            
-            foreach (var rec in DemoDatabase.PayrollHistory)
+            catch (Exception ex)
             {
-                if (rec.PayrollDate >= StartDate && rec.PayrollDate <= EndDate.AddDays(1))
-                {
-                    // Find position
-                    var emp = DemoDatabase.Employees.FirstOrDefault(e => e.EmpNumber == rec.EmpNumber);
-                    var pos = emp != null ? emp.Position : "Staff";
-                    var basicPay = emp != null ? emp.DailyRate : 0;
-                    
-                    PayrollRecords.Add(new BatchPrintRecord(rec, pos, basicPay));
-                }
+                StatusMessage = $"Database error: {ex.Message}";
             }
-
-            if (PayrollRecords.Count == 0)
-                StatusMessage = "No processed payrolls found for this period.";
-            else
-                StatusMessage = "";
         }
 
         private void PrintSelectedPayslips()
@@ -377,6 +363,8 @@ namespace PayrollSystem.ViewModels
                 doc.PagePadding = new Thickness(40, 20, 40, 20); // Tighter padding for batch
                 doc.FontFamily = new FontFamily("Segoe UI");
                 doc.FontSize = 11; // Slightly smaller font
+                doc.Background = Brushes.White;
+                doc.Foreground = Brushes.Black;
 
                 int count = 0;
                 int maxPerSheet = 3; // Stack 3 per Long Bond to ensure safety
@@ -432,7 +420,7 @@ namespace PayrollSystem.ViewModels
         {
             var darkGreen  = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E7B44"));
             var darkGray   = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#333333"));
-            var lightGray  = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E8E8E8"));
+            var lightGray  = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F0F0F0"));
 
             var periodStr  = $"{item.Record.PeriodStart:MMMM dd, yyyy} \u2013 {item.Record.PeriodEnd:MMMM dd, yyyy}";
             var basicPay   = item.BasicPay;
@@ -443,8 +431,8 @@ namespace PayrollSystem.ViewModels
             var hdrTable = new Table();
             hdrTable.Columns.Add(new TableColumn());
             var hRg  = new TableRowGroup();
-            var hRow = new TableRow { Background = Brushes.Black };
-            hRow.Cells.Add(BP_Cell("Zoey's Billiard House", FontWeights.Bold, Brushes.Black, Brushes.White, 1, TextAlignment.Center, 16));
+            var hRow = new TableRow { Background = darkGreen };
+            hRow.Cells.Add(BP_Cell("Zoey's Billiard House", FontWeights.Bold, darkGreen, Brushes.White, 1, TextAlignment.Center, 16));
             hRg.Rows.Add(hRow);
             hdrTable.RowGroups.Add(hRg);
             doc.Blocks.Add(hdrTable);
@@ -522,7 +510,8 @@ namespace PayrollSystem.ViewModels
             deRg.Rows.Add(BP_DedRow("Loan",              $"\u20b1{item.Record.Loan:N2}"));
             deRg.Rows.Add(BP_DedRow("Late",              $"\u20b1{item.Record.Late:N2}"));
             deRg.Rows.Add(BP_DedRow("Undertime",         $"\u20b1{item.Record.Undertime:N2}"));
-            deRg.Rows.Add(BP_DedRow("Other Deductions",  $"\u20b1{item.Record.Others:N2}"));
+            deRg.Rows.Add(BP_DedRow("Cash Advance",      $"\u20b1{item.Record.CashAdvance:N2}"));
+            deRg.Rows.Add(BP_DedRow(string.IsNullOrWhiteSpace(item.Record.OthersName) ? "Other Deductions" : item.Record.OthersName, $"\u20b1{item.Record.Others:N2}"));
             var deFoot = new TableRow();
             deFoot.Cells.Add(BP_Cell("Total Deductions", FontWeights.Bold, lightGray, Brushes.Black, 1, TextAlignment.Left,  11, true));
             deFoot.Cells.Add(BP_Cell(item.Record.Deductions, FontWeights.Bold, lightGray, Brushes.Black, 1, TextAlignment.Right, 11, true));

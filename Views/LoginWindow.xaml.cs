@@ -41,6 +41,15 @@ namespace PayrollSystem.Views
             DoLogin();
         }
 
+        private void UsernameBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                if (_isPasswordVisible) PasswordTextBox.Focus();
+                else PasswordBox.Focus();
+            }
+        }
+
         private void PasswordBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter) DoLogin();

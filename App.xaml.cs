@@ -28,6 +28,13 @@ namespace PayrollSystem
             });
         }
 
+        protected override void OnExit(ExitEventArgs e)
+        {
+            // Create a backup of the database before the application closes completely
+            DatabaseHelper.BackupDatabase();
+            base.OnExit(e);
+        }
+
         /// <summary>
         /// Switches the application theme at runtime.
         /// </summary>

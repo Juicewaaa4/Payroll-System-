@@ -4,7 +4,8 @@ using System.Linq;
 using System.Windows.Input;
 using PayrollSystem.Helpers;
 using PayrollSystem.DataAccess;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
+using PayrollSystem.Models;
 
 namespace PayrollSystem.ViewModels
 {
@@ -45,6 +46,7 @@ namespace PayrollSystem.ViewModels
         private string _loan = "0.00";
         private string _late = "0.00";
         private string _undertime = "0.00";
+        private string _cashAdvance = "0.00";
         private string _others = "0.00";
         private string _othersName = "Other Deductions";
         private string _totalDeductions = "0.00";
@@ -103,6 +105,7 @@ namespace PayrollSystem.ViewModels
         public string Loan { get => _loan; set { SetProperty(ref _loan, value); RecomputeDeductions(); } }
         public string Late { get => _late; set { SetProperty(ref _late, value); RecomputeDeductions(); } }
         public string Undertime { get => _undertime; set { SetProperty(ref _undertime, value); RecomputeDeductions(); } }
+        public string CashAdvance { get => _cashAdvance; set { SetProperty(ref _cashAdvance, value); RecomputeDeductions(); } }
         public string Others { get => _others; set { SetProperty(ref _others, value); RecomputeDeductions(); } }
         public string OthersName { get => _othersName; set => SetProperty(ref _othersName, value); }
         public string TotalDeductions { get => _totalDeductions; set => SetProperty(ref _totalDeductions, value); }
@@ -150,44 +153,29 @@ namespace PayrollSystem.ViewModels
         {
             try
             {
-                if (!DatabaseHelper.TestConnection())
-                {
-                    DemoDatabase.Initialize();
-                    
-                    Employees.Clear();
-                    foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
-                    
-                    FilterEmployees();
-                    return;
-                }
+                if (!DatabaseHelper.TestConnection()) return;
 
                 Employees.Clear();
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
-                using var cmd = new MySqlCommand("SELECT id, emp_number, first_name, last_name, position, daily_rate FROM employees WHERE is_active = 1 ORDER BY last_name", conn);
+                using var cmd = new SqliteCommand("SELECT id, emp_number, first_name, last_name, position, daily_rate FROM employees WHERE is_active = 1 ORDER BY last_name", conn);
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
                     Employees.Add(new EmployeeItem
                     {
-                        Id = reader.GetInt32("id"),
-                        EmpNumber = reader.GetString("emp_number"),
-                        FirstName = reader.GetString("first_name"),
-                        LastName = reader.GetString("last_name"),
-                        FullName = $"{reader.GetString("first_name")} {reader.GetString("last_name")}",
-                        Position = reader.GetString("position"),
-                        DailyRate = reader.GetDecimal("daily_rate"),
+                        Id = reader.GetInt32(reader.GetOrdinal("id")),
+                        EmpNumber = reader.GetString(reader.GetOrdinal("emp_number")),
+                        FirstName = reader.GetString(reader.GetOrdinal("first_name")),
+                        LastName = reader.GetString(reader.GetOrdinal("last_name")),
+                        FullName = $"{reader.GetString(reader.GetOrdinal("first_name"))} {reader.GetString(reader.GetOrdinal("last_name"))}",
+                        Position = reader.GetString(reader.GetOrdinal("position")),
+                        DailyRate = reader.GetDecimal(reader.GetOrdinal("daily_rate")),
                     });
                 }
                 FilterEmployees();
-                return;
             }
             catch { }
-
-            DemoDatabase.Initialize();
-            Employees.Clear();
-            foreach (var emp in DemoDatabase.Employees) Employees.Add(emp);
-            FilterEmployees();
         }
 
         private void FilterEmployees()
@@ -213,9 +201,57 @@ namespace PayrollSystem.ViewModels
             Position = SelectedEmployee.Position;
             EmpNumber = SelectedEmployee.EmpNumber;
             RatePerDay = $"{SelectedEmployee.DailyRate:N2}";
+
+            PayrollHistoryRecord? lastRecord = null;
+            if (DatabaseHelper.TestConnection())
+            {
+                try
+                {
+                    using var conn = DatabaseHelper.GetConnection();
+                    conn.Open();
+                    using var cmd = new SqliteCommand(@"
+                        SELECT p.*, e.emp_number,
+                               (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'SSS') as Sss,
+                               (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'PAGIBIG') as Pagibig,
+                               (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'PhilHealth') as Philhealth,
+                               (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Loan') as Loan,
+                               (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Other' AND d.name LIKE '%Late%') as Late,
+                               (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Other' AND d.name LIKE '%Undertime%') as Undertime,
+                               (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Other' AND d.name LIKE '%Cash Advance%') as CashAdvance,
+                               (SELECT SUM(amount) FROM deductions d WHERE d.payroll_id = p.id AND d.type = 'Other' AND d.name NOT LIKE '%Late%' AND d.name NOT LIKE '%Undertime%' AND d.name NOT LIKE '%Cash Advance%') as Others
+                        FROM payroll p
+                        JOIN employees e ON p.employee_id = e.id
+                        WHERE e.emp_number = @empNum
+                        ORDER BY p.payroll_date DESC LIMIT 1", conn);
+                    cmd.Parameters.AddWithValue("@empNum", SelectedEmployee.EmpNumber);
+                    
+                    using var reader = cmd.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        lastRecord = new PayrollHistoryRecord
+                        {
+                            PeriodStart = DateTime.Parse(reader.GetString(reader.GetOrdinal("period_start"))),
+                            PeriodEnd = DateTime.Parse(reader.GetString(reader.GetOrdinal("period_end"))),
+                            WorkDays = reader.GetInt32(reader.GetOrdinal("work_days")),
+                            OvertimeHours = reader.GetDecimal(reader.GetOrdinal("overtime_hours")),
+                            HolidayHours = reader.GetDecimal(reader.GetOrdinal("holiday_hours")),
+                            Allowance = reader.GetDecimal(reader.GetOrdinal("allowance")),
+                            Bonus = reader.GetDecimal(reader.GetOrdinal("bonus")),
+                            Sss = reader.IsDBNull(reader.GetOrdinal("Sss")) ? 0 : reader.GetDecimal(reader.GetOrdinal("Sss")),
+                            Pagibig = reader.IsDBNull(reader.GetOrdinal("Pagibig")) ? 0 : reader.GetDecimal(reader.GetOrdinal("Pagibig")),
+                            Philhealth = reader.IsDBNull(reader.GetOrdinal("Philhealth")) ? 0 : reader.GetDecimal(reader.GetOrdinal("Philhealth")),
+                            Loan = reader.IsDBNull(reader.GetOrdinal("Loan")) ? 0 : reader.GetDecimal(reader.GetOrdinal("Loan")),
+                            Late = reader.IsDBNull(reader.GetOrdinal("Late")) ? 0 : reader.GetDecimal(reader.GetOrdinal("Late")),
+                            Undertime = reader.IsDBNull(reader.GetOrdinal("Undertime")) ? 0 : reader.GetDecimal(reader.GetOrdinal("Undertime")),
+                            CashAdvance = reader.IsDBNull(reader.GetOrdinal("CashAdvance")) ? 0 : reader.GetDecimal(reader.GetOrdinal("CashAdvance")),
+                            Others = reader.IsDBNull(reader.GetOrdinal("Others")) ? 0 : reader.GetDecimal(reader.GetOrdinal("Others"))
+                        };
+                    }
+                }
+                catch { }
+            }
             
             // Apply last processed payroll inputs to the form automatically
-            var lastRecord = DemoDatabase.PayrollHistory.OrderByDescending(r => r.PayrollDate).FirstOrDefault(r => r.EmpNumber == SelectedEmployee.EmpNumber);
             if (lastRecord != null)
             {
                 _periodStart = lastRecord.PeriodStart;
@@ -256,10 +292,12 @@ namespace PayrollSystem.ViewModels
                 _sss = $"{lastRecord.Sss:N2}";
                 _pagibig = $"{lastRecord.Pagibig:N2}";
                 _philhealth = $"{lastRecord.Philhealth:N2}";
+                _cashAdvance = $"{lastRecord.CashAdvance:N2}";
                 
                 OnPropertyChanged(nameof(Sss));
                 OnPropertyChanged(nameof(Pagibig));
                 OnPropertyChanged(nameof(Philhealth));
+                OnPropertyChanged(nameof(CashAdvance));
                 
                 RecomputeDeductions();
             }
@@ -371,9 +409,10 @@ namespace PayrollSystem.ViewModels
             decimal.TryParse(_loan?.Replace("₱", ""), out var loan);
             decimal.TryParse(_late?.Replace("₱", ""), out var late);
             decimal.TryParse(_undertime?.Replace("₱", ""), out var under);
+            decimal.TryParse(_cashAdvance?.Replace("₱", ""), out var cashAdv);
             decimal.TryParse(_others?.Replace("₱", ""), out var others);
 
-            var totalDed = sss + pagibig + phil + loan + late + under + others;
+            var totalDed = sss + pagibig + phil + loan + late + under + cashAdv + others;
             var net = _cachedGross - totalDed;
 
             TotalDeductions = $"{totalDed:N2}";
@@ -409,16 +448,19 @@ namespace PayrollSystem.ViewModels
                 doc.FontFamily = new System.Windows.Media.FontFamily("Segoe UI");
                 doc.FontSize = 12;
 
+                // Print-friendly colors: always white/light regardless of dark mode
                 var darkGreen = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E7B44"));
                 var darkGray = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#333333"));
-                var lightGray = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E8E8E8"));
+                var lightGray = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F0F0F0"));
+                doc.Background = System.Windows.Media.Brushes.White;
+                doc.Foreground = System.Windows.Media.Brushes.Black;
 
                 // Top Header (Logo substitute)
                 var headerTable = new System.Windows.Documents.Table();
                 headerTable.Columns.Add(new System.Windows.Documents.TableColumn());
                 var hRg = new System.Windows.Documents.TableRowGroup();
-                var hRow = new System.Windows.Documents.TableRow() { Background = System.Windows.Media.Brushes.Black };
-                hRow.Cells.Add(CreateCell(CompanyName, System.Windows.FontWeights.Bold, System.Windows.Media.Brushes.Black, System.Windows.Media.Brushes.White, 1, System.Windows.TextAlignment.Center, 22));
+                var hRow = new System.Windows.Documents.TableRow() { Background = darkGreen };
+                hRow.Cells.Add(CreateCell(CompanyName, System.Windows.FontWeights.Bold, darkGreen, System.Windows.Media.Brushes.White, 1, System.Windows.TextAlignment.Center, 22));
                 hRg.Rows.Add(hRow);
                 headerTable.RowGroups.Add(hRg);
                 doc.Blocks.Add(headerTable);
@@ -524,6 +566,7 @@ namespace PayrollSystem.ViewModels
                 dRg.Rows.Add(CreateDeductionRow("PhilHealth Contribution", Philhealth));
                 dRg.Rows.Add(CreateDeductionRow("Pag-IBIG Contribution", Pagibig));
                 dRg.Rows.Add(CreateDeductionRow("Loan", Loan));
+                dRg.Rows.Add(CreateDeductionRow("Cash Advance", CashAdvance));
                 dRg.Rows.Add(CreateDeductionRow(string.IsNullOrWhiteSpace(OthersName) ? "Other Deductions" : OthersName, Others));
 
                 var df = new System.Windows.Documents.TableRow();
@@ -545,7 +588,7 @@ namespace PayrollSystem.ViewModels
                 var summaryPara = new System.Windows.Documents.Paragraph();
                 summaryPara.TextAlignment = System.Windows.TextAlignment.Center;
                 summaryPara.Inlines.Add(new System.Windows.Documents.Run("Gross Earnings – Total Deductions = ") { FontWeight = System.Windows.FontWeights.Bold });
-                summaryPara.Inlines.Add(new System.Windows.Documents.Run($"₱ {NetPay}") { FontWeight = System.Windows.FontWeights.Bold, Foreground = darkGreen });
+                summaryPara.Inlines.Add(new System.Windows.Documents.Run($"₱ {NetPay}") { FontWeight = System.Windows.FontWeights.Bold, Foreground = darkGreen, FontSize = 16 });
                 doc.Blocks.Add(summaryPara);
                 doc.Blocks.Add(CreateSeparator());
 
