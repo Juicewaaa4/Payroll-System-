@@ -109,35 +109,35 @@
                                         <TextBlock Grid.Column="0" Text="Basic Salary"/>
                                         <TextBlock Grid.Column="1" Text="—" TextAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="{Binding WorkDays}" TextAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding BasicSalary, StringFormat=₱ {0}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding BasicSalary, StringFormat=₱ \{0:N2\}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     </Grid>
                                     
                                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="2.5*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="Overtime Pay"/>
                                         <TextBlock Grid.Column="1" Text="—" TextAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="{Binding OvertimeHours}" TextAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding OtPay, StringFormat=₱ {0}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding OtPay, StringFormat=₱ \{0:N2\}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     </Grid>
 
                                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="2.5*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="Holiday Pay"/>
                                         <TextBlock Grid.Column="1" Text="—" TextAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="{Binding HolidayHours}" TextAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding HolidayPay, StringFormat=₱ {0}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding HolidayPay, StringFormat=₱ \{0:N2\}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     </Grid>
 
                                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="2.5*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="Incentives / Bonus"/>
                                         <TextBlock Grid.Column="1" Text="—" TextAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="—" TextAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding BonusAmount, StringFormat=₱ {0}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding BonusAmount, StringFormat=₱ \{0:N2\}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     </Grid>
 
                                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="2.5*"/><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="Allowance"/>
                                         <TextBlock Grid.Column="1" Text="—" TextAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="—" TextAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding AllowanceTotal, StringFormat=₱ {0}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding AllowanceTotal, StringFormat=₱ \{0:N2\}}" TextAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     </Grid>
                                 </StackPanel>
 
@@ -145,7 +145,7 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="GROSS EARNINGS" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding GrossSalary, StringFormat=₱ {0}}" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold" TextAlignment="Right"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding GrossSalary, StringFormat=₱ \{0:N2\}}" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold" TextAlignment="Right"/>
                                     </Grid>
                                 </Border>
                             </Grid>
@@ -239,7 +239,7 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="TOTAL DEDUCTIONS" Foreground="{DynamicResource ErrorBrush}" FontWeight="Bold"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding TotalDeductions, StringFormat=₱ {0}}" Foreground="{DynamicResource ErrorBrush}" FontWeight="Bold" TextAlignment="Right"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding TotalDeductions, StringFormat=₱ \{0:N2\}}" Foreground="{DynamicResource ErrorBrush}" FontWeight="Bold" TextAlignment="Right"/>
                                     </Grid>
                                 </Border>
                             </Grid>
@@ -254,7 +254,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="NET PAY (GROSS EARNINGS – TOTAL DEDUCTIONS)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource NetPayTextBrush}"/>
-                            <TextBlock Grid.Column="1" Text="{Binding NetPay, StringFormat=₱ {0}}" FontWeight="Bold" FontSize="18" Foreground="{DynamicResource NetPayTextBrush}" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="1" Text="{Binding NetPay, StringFormat=₱ \{0:N2\}}" FontWeight="Bold" FontSize="18" Foreground="{DynamicResource NetPayTextBrush}" TextAlignment="Right"/>
                         </Grid>
                     </Border>
 

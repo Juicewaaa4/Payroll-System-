@@ -96,14 +96,14 @@ namespace PayrollSystem.Configuration
         /// <param name="key">Configuration key</param>
         /// <param name="defaultValue">Default value if not found</param>
         /// <returns>Configuration value</returns>
-        public static T GetConfiguration<T>(string key, T defaultValue = default(T))
+        public static T? GetConfiguration<T>(string key, T? defaultValue = default)
         {
             if (_configurations.ContainsKey(key))
             {
                 var config = _configurations[key];
                 try
                 {
-                    return (T)Convert.ChangeType(config.Value, typeof(T));
+                    return (T?)Convert.ChangeType(config.Value, typeof(T));
                 }
                 catch
                 {
